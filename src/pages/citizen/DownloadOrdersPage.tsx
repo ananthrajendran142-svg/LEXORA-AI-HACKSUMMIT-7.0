@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, FileText, Search, ShieldCheck, CheckCircle, Lock } from 'lucide-react';
+import { api } from '../../services/api';
 
 export const DownloadOrdersPage: React.FC = () => {
   const [searchNo, setSearchNo] = useState('');
@@ -52,6 +53,35 @@ DATED THIS 10TH DAY OF MAY 2026.
 [DIGITALLY SIGNED & VERIFIED BY REGISTRAR]`
     }
   ]);
+
+  useEffect(() => {
+    async function loadLiveOrders() {
+      try {
+        const res = await api.getDrafts();
+        if (res.success && res.drafts && res.drafts.length > 0) {
+          const formatted = res.drafts.map((d: any) => ({
+            id: d.id,
+            caseNo: d.case?.caseNumber || d.caseId || 'COURT ORDER',
+            title: d.title || 'Official Court Summons / Order',
+            date: new Date(d.createdAt).toLocaleDateString(),
+            judge: d.signedBy?.name || 'Hon\'ble Presiding Judicial Officer',
+            orderType: `${d.docType || 'Summons'} (${d.status || 'DRAFT'})`,
+            fileSize: `${Math.round((d.content?.length || 500) / 1024 * 10) / 10} KB`,
+            content: d.content
+          }));
+
+          setOrders((prev) => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newOrders = formatted.filter((f: any) => !existingIds.has(f.id));
+            return [...newOrders, ...prev];
+          });
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    loadLiveOrders();
+  }, []);
 
   const handleDownload = (ord: any) => {
     const blob = new Blob([ord.content], { type: 'text/plain' });

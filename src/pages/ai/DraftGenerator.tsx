@@ -46,6 +46,22 @@ export const DraftGenerator = () => {
         court: 'IN THE HIGH COURT OF JUDICATURE AT BOMBAY'
       });
       setDraftContent(res.content);
+
+      // Auto-save generated draft to docket database
+      try {
+        const saveRes = await api.saveDraft({
+          caseId: caseNo || '1',
+          docType: docType || 'Order',
+          title: `${docType} - ${caseNo}`,
+          content: res.content
+        });
+        if (saveRes.success && saveRes.draft) {
+          setCurrentDraftId(saveRes.draft.id);
+          loadSavedDrafts();
+        }
+      } catch {
+        // Fallback
+      }
     } catch {
       // Handled in fallback
     } finally {
@@ -54,23 +70,38 @@ export const DraftGenerator = () => {
   };
 
   const handleSignOff = async (status: 'APPROVED' | 'REJECTED', idToSign?: string) => {
-    const targetId = idToSign || currentDraftId;
+    let targetId = idToSign || currentDraftId;
     setDraftStatus(status);
 
-    if (targetId) {
-      try {
-        await api.signOffDraft(targetId, status);
-        loadSavedDrafts();
-      } catch {
-        // Fallback UI change
-      }
+    let updatedContent = draftContent;
+    if (status === 'APPROVED' && draftContent) {
+      updatedContent = draftContent
+        .replace('DRAFT — AI-GENERATED, UNEXECUTED (REVIEW REQUIRED)', 'OFFICIAL JUDICIAL ORDER — EXECUTED & APPROVED BY PRESIDING OFFICER')
+        .replace('(Status: DRAFT - Awaiting Authenticated Sign-Off)', '(Status: FINAL - Signed off by Hon\'ble Presiding Officer)');
+      setDraftContent(updatedContent);
     }
 
-    if (status === 'APPROVED' && draftContent) {
-      setDraftContent((prev) => 
-        prev.replace('DRAFT — AI-GENERATED, UNEXECUTED (REVIEW REQUIRED)', 'OFFICIAL JUDICIAL ORDER — EXECUTED & APPROVED BY PRESIDING OFFICER')
-            .replace('(Status: DRAFT - Awaiting Authenticated Sign-Off)', '(Status: FINAL - Signed off by Hon\'ble Presiding Officer)')
-      );
+    try {
+      // If not yet saved in DB, persist it now
+      if (!targetId && updatedContent) {
+        const saveRes = await api.saveDraft({
+          caseId: caseNo || '1',
+          docType: docType || 'Order',
+          title: `${docType} - ${caseNo}`,
+          content: updatedContent
+        });
+        if (saveRes.success && saveRes.draft) {
+          targetId = saveRes.draft.id;
+          setCurrentDraftId(targetId);
+        }
+      }
+
+      if (targetId) {
+        await api.signOffDraft(targetId, status, updatedContent);
+      }
+      loadSavedDrafts();
+    } catch (err) {
+      console.warn('Sign-off persistence error:', err);
     }
   };
 

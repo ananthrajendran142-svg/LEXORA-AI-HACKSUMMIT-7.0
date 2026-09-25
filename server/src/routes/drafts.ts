@@ -19,13 +19,6 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       const userCases = await prisma.case.findMany({ where: { lawyerId: userId }, select: { id: true } });
       const userCaseIds = userCases.map(c => c.id);
       where.caseId = { in: userCaseIds };
-    } else if (userRole === 'JUDGE') {
-      const userCases = await prisma.case.findMany({ where: { OR: [{ judgeId: userId }, { judgeId: null }] }, select: { id: true } });
-      const userCaseIds = userCases.map(c => c.id);
-      where.OR = [
-        { caseId: { in: userCaseIds } },
-        { signedById: userId }
-      ];
     } else if (userRole === 'CITIZEN') {
       const userName = req.user?.name || '';
       const userCases = await prisma.case.findMany({
@@ -36,7 +29,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
       where.caseId = { in: userCaseIds };
       where.status = 'APPROVED'; // Citizens only see approved orders/notices
     }
-    // STAFF & ADMIN see all drafts
+    // JUDGE, COURT_STAFF, STAFF, ADMIN see all registry drafts & summonses
 
     const drafts = await prisma.draftOrder.findMany({
       where,
