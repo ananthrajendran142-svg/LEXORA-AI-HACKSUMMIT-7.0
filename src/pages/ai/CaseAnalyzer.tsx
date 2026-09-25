@@ -4,9 +4,10 @@ import { fastApi } from '@/services/fastapi';
 
 const cleanParty = (val?: string) => {
   if (!val) return 'N/A';
-  let s = val.replace(/^(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants)\s*[:\-–—]\s*/i, '').trim();
-  s = s.replace(/\s*\.\.\.\s*(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants)$/i, '').trim();
-  if (['respondent', 'respondents', 'petitioner', 'petitioners', 'appellant', 'appellants', 'defendant', 'defendants'].includes(s.toLowerCase())) {
+  let s = val.replace(/^(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants|Complainant|Complainants|Plaintiff|Plaintiffs)\s*(?:\([sS]\))?\s*[:\-–—\.]*\s*/i, '').trim();
+  s = s.replace(/(?:\s*[\.\-\_\,\(]+)?\s*(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants|Complainant|Complainants|Plaintiff|Plaintiffs)\s*(?:\([sS]\))?[\.\)\s]*$/i, '').trim();
+  s = s.replace(/^[:\-–—\.\s]+|[:\-–—\.\s]+$/g, '').trim();
+  if (['respondent', 'respondents', 'petitioner', 'petitioners', 'appellant', 'appellants', 'defendant', 'defendants', 'complainant', 'complainants', 'plaintiff', 'plaintiffs', 'n/a', 'none', 'null', 'undefined', 'versus', 'vs', 'v.'].includes(s.toLowerCase())) {
     return 'N/A';
   }
   return s || 'N/A';

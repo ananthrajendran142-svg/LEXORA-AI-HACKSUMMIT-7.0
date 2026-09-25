@@ -207,10 +207,36 @@ async def extract_file(file: UploadFile = File(...)):
 def analyze_entities(req: AnalyzeRequest):
     """
     Extracts structured entities (case number, court, petitioner, respondent, judge, sections, dates, witnesses).
+    Uses robust multi-pattern Regex + NLP + LLM fallback for maximum extraction accuracy.
     """
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="Empty text provided.")
+    
     entities = extract_legal_entities(req.text)
+    
+    # If key entities (petitioner, respondent, judge_name) are missing, try LLM fallback extraction
+    if not entities.get("petitioner") or not entities.get("respondent") or not entities.get("judge_name"):
+        try:
+            from llm.client import call_llm, _clean_json_response
+            from nlp.entities import clean_party_name
+            prompt = (
+                "Extract structured legal entities from the following Indian court judgment or document text as JSON with keys:\n"
+                "\"case_number\", \"court_name\", \"petitioner\", \"respondent\", \"judge_name\", \"hearing_date\".\n"
+                "Only output valid JSON. Use null if not found.\n\n"
+                f"DOCUMENT TEXT:\n{req.text[:4000]}"
+            )
+            raw = call_llm(prompt, temperature=0.0)
+            llm_res = _clean_json_response(raw)
+            if isinstance(llm_res, dict):
+                for key in ["case_number", "court_name", "petitioner", "respondent", "judge_name", "hearing_date"]:
+                    if not entities.get(key) and llm_res.get(key):
+                        val_str = str(llm_res[key]).strip()
+                        cleaned = clean_party_name(val_str) if key in ["petitioner", "respondent"] else val_str
+                        if cleaned and cleaned.lower() not in ["null", "n/a", "none"]:
+                            entities[key] = cleaned
+        except Exception:
+            pass  # Fallback to regex entities
+
     return {
         "success": True,
         "entities": entities,
