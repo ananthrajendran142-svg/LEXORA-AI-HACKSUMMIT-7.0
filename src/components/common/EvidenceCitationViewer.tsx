@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FormattedMarkdown } from './FormattedMarkdown';
 import { ShieldCheck, FileText, ExternalLink, X, BookOpen, Scale, AlertCircle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface EvidenceSource {
@@ -176,9 +177,7 @@ export const EvidenceCitationViewer: React.FC<EvidenceCitationViewerProps> = ({
           </div>
 
           {/* Answer Text */}
-          <div className="text-xs leading-relaxed whitespace-pre-line font-sans theme-heading">
-            {answer}
-          </div>
+          {answer && <FormattedMarkdown content={answer} />}
 
           {/* Simple Plain-Language Explanation */}
           {simpleExplanation && (

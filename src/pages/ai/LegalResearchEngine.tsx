@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookOpen, Search, Scale, Bot, Cpu, Sparkles, MessageSquare, Send, RefreshCw, CheckCircle2, AlertCircle, Copy, Check, FileText, ArrowRight } from 'lucide-react';
 import { fastApi } from '@/services/fastapi';
 import { EvidenceCitationViewer } from '@/components/common/EvidenceCitationViewer';
+import { FormattedMarkdown } from '@/components/common/FormattedMarkdown';
 
 export const LegalResearchEngine: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'statute' | 'chatbot'>('statute');
@@ -439,7 +440,11 @@ export const LegalResearchEngine: React.FC = () => {
                       : 'theme-elevated border border-subtle theme-heading rounded-bl-none shadow-sm'
                   }`}
                 >
-                  {msg.text}
+                  {msg.sender === 'user' ? (
+                    msg.text
+                  ) : (
+                    <FormattedMarkdown content={msg.text} />
+                  )}
 
                   {msg.sender === 'assistant' && (
                     <button

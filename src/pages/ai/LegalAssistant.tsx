@@ -24,6 +24,7 @@ import { fastApi } from '@/services/fastapi';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { EvidenceCitationViewer, type EvidenceSource } from '@/components/common/EvidenceCitationViewer';
+import { FormattedMarkdown } from '@/components/common/FormattedMarkdown';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -376,9 +377,7 @@ export const LegalAssistant: React.FC = () => {
 
                 <div className="theme-card p-5 space-y-4 shadow-sm border border-subtle rounded-sm">
                   {/* Legal Answer Text */}
-                  <div className="text-xs leading-relaxed whitespace-pre-line theme-heading font-sans">
-                    {msg.text}
-                  </div>
+                  <FormattedMarkdown content={msg.text} />
 
                   {/* Plain Language Overview */}
                   {msg.simpleExplanation && (
