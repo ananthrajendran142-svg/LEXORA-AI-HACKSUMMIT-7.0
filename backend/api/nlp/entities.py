@@ -129,14 +129,20 @@ def extract_legal_entities(text: str) -> Dict[str, Any]:
         if len(vs_blocks) >= 2:
             lines_before = [l.strip() for l in vs_blocks[0].split('\n') if l.strip()]
             lines_after = [l.strip() for l in vs_blocks[1].split('\n') if l.strip()]
+            
             if lines_before and not entities["petitioner"]:
-                cand_p = clean_party_name(lines_before[-1])
-                if cand_p:
-                    entities["petitioner"] = cand_p
+                for line in reversed(lines_before):
+                    cand_p = clean_party_name(line)
+                    if cand_p:
+                        entities["petitioner"] = cand_p
+                        break
+
             if lines_after and not entities["respondent"]:
-                cand_r = clean_party_name(lines_after[0])
-                if cand_r:
-                    entities["respondent"] = cand_r
+                for line in lines_after:
+                    cand_r = clean_party_name(line)
+                    if cand_r:
+                        entities["respondent"] = cand_r
+                        break
 
     # 6. Inline Versus Regex (X vs Y or X v. Y)
     if not entities["petitioner"] or not entities["respondent"]:
@@ -153,6 +159,29 @@ def extract_legal_entities(text: str) -> Dict[str, Any]:
                 cand_r = clean_party_name(vs_match.group(2).split('\n')[0])
                 if cand_r:
                     entities["respondent"] = cand_r
+
+    # 7. Line-by-line fallback for role tags (e.g. "...Appellant(s)" or "...Respondent(s)" on its own line)
+    text_lines = [l.strip() for l in text.split('\n') if l.strip()]
+    for idx, line in enumerate(text_lines):
+        if not entities["petitioner"] and re.search(r'(?:Petitioner|Appellant|Complainant|Plaintiff)', line, re.IGNORECASE):
+            # Check current line first
+            c = clean_party_name(line)
+            if c:
+                entities["petitioner"] = c
+            elif idx > 0:
+                c_prev = clean_party_name(text_lines[idx - 1])
+                if c_prev:
+                    entities["petitioner"] = c_prev
+
+        if not entities["respondent"] and re.search(r'(?:Respondent|Defendant|Appellee)', line, re.IGNORECASE):
+            # Check current line first
+            c = clean_party_name(line)
+            if c:
+                entities["respondent"] = c
+            elif idx > 0:
+                c_prev = clean_party_name(text_lines[idx - 1])
+                if c_prev:
+                    entities["respondent"] = c_prev
 
     # Final Sanitization Pass for Parties
     if entities["respondent"]:
