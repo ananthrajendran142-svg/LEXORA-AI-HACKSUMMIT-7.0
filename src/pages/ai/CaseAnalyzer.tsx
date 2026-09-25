@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { FileSearch, Upload, Check, AlertCircle, FileText } from 'lucide-react';
 import { fastApi } from '@/services/fastapi';
 
+const cleanParty = (val?: string) => {
+  if (!val) return 'N/A';
+  let s = val.replace(/^(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants)\s*[:\-–—]\s*/i, '').trim();
+  s = s.replace(/\s*\.\.\.\s*(?:Respondent|Respondents|Petitioner|Petitioners|Appellant|Appellants|Defendant|Defendants)$/i, '').trim();
+  if (['respondent', 'respondents', 'petitioner', 'petitioners', 'appellant', 'appellants', 'defendant', 'defendants'].includes(s.toLowerCase())) {
+    return 'N/A';
+  }
+  return s || 'N/A';
+};
+
 export const CaseAnalyzer = () => {
   const [file, setFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
@@ -127,12 +137,12 @@ export const CaseAnalyzer = () => {
 
             <div className="p-3.5 theme-elevated rounded border border-subtle space-y-1">
               <span className="font-semibold theme-subtext block text-[10px] uppercase">Petitioner / Appellant:</span>
-              <span className="font-bold theme-heading">{entities.petitioner || 'N/A'}</span>
+              <span className="font-bold theme-heading">{cleanParty(entities.petitioner)}</span>
             </div>
 
             <div className="p-3.5 theme-elevated rounded border border-subtle space-y-1">
               <span className="font-semibold theme-subtext block text-[10px] uppercase">Respondent / Defendant:</span>
-              <span className="font-bold theme-heading">{entities.respondent || 'N/A'}</span>
+              <span className="font-bold theme-heading">{cleanParty(entities.respondent)}</span>
             </div>
 
             <div className="p-3.5 theme-elevated rounded border border-subtle space-y-1">
