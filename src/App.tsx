@@ -79,6 +79,7 @@ function App() {
             {/* Lawyer Portal */}
             <Route path="/lawyer/dashboard" element={<LawyerDashboard />} />
             <Route path="/lawyer/cases" element={<CaseManagement />} />
+            <Route path="/lawyer/cases/:id" element={<CaseWorkspacePage />} />
 
             {/* Court Staff Portal */}
             <Route path="/staff/dashboard" element={<StaffDashboard />} />
@@ -96,6 +97,7 @@ function App() {
             {/* System Admin Portal */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/cases" element={<CaseManagement />} />
+            <Route path="/admin/cases/:id" element={<CaseWorkspacePage />} />
             <Route path="/admin/users" element={<UserManagementPage />} />
             <Route path="/admin/allocations" element={<BenchAllocationPage />} />
             <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
