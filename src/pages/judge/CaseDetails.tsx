@@ -204,7 +204,7 @@ export function CaseDetails() {
                 <p className="text-lg font-bold text-slate-900 dark:text-white mb-1 font-display">
                   {caseData.petitioner}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Representation: Advocate Priya Sharma</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Representation: {caseData.petitionerLawyer || caseData.lawyer?.name || 'Advocate for Petitioner'}</p>
               </CardContent>
             </Card>
 
@@ -219,7 +219,7 @@ export function CaseDetails() {
                 <p className="text-lg font-bold text-slate-900 dark:text-white mb-1 font-display">
                   {caseData.respondent}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Representation: Standing Counsel for State</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Representation: {caseData.respondentLawyer || 'Standing Counsel'}</p>
               </CardContent>
             </Card>
           </div>
