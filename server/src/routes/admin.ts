@@ -201,6 +201,15 @@ const createAllocationHandler = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // ── Past Date Validation ────
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (date < todayStr) {
+      return res.status(400).json({
+        error: 'Invalid Date',
+        message: 'Cannot create a bench allocation for a past date. Please select today or a future date.'
+      });
+    }
+
     // Verify Judge exists
     const judge = await prisma.user.findUnique({ where: { id: judgeId } });
     if (!judge) {

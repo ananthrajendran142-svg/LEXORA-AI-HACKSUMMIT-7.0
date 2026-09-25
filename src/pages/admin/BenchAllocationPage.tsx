@@ -32,11 +32,14 @@ export const BenchAllocationPage: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [actionMsg, setActionMsg] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [viewTab, setViewTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   // Form inputs
   const [selectedJudgeId, setSelectedJudgeId] = useState<string>('');
   const [courtroom, setCourtroom] = useState<string>('Courtroom #1 (Main Hall)');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(todayStr);
   const [startTime, setStartTime] = useState<string>('10:30 AM');
   const [endTime, setEndTime] = useState<string>('04:30 PM');
   const [division, setDivision] = useState<string>('Commercial Recovery & SARFAESI Act');
@@ -79,6 +82,11 @@ export const BenchAllocationPage: React.FC = () => {
       return;
     }
 
+    if (date < todayStr) {
+      setErrorMsg("Cannot create a bench allocation for a past date. Please select today's date or a future date.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await api.createBenchAllocation({
@@ -112,6 +120,11 @@ export const BenchAllocationPage: React.FC = () => {
     }
   };
 
+  // Filter allocations into Active/Upcoming vs Past Archive
+  const upcomingAllocations = allocations.filter((a) => a.date >= todayStr);
+  const pastAllocations = allocations.filter((a) => a.date < todayStr);
+  const displayedAllocations = viewTab === 'upcoming' ? upcomingAllocations : pastAllocations;
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
@@ -127,7 +140,7 @@ export const BenchAllocationPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => { setErrorMsg(''); setShowAddModal(true); }}
+          onClick={() => { setErrorMsg(''); setDate(todayStr); setShowAddModal(true); }}
           className="theme-primary-btn px-4 py-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -155,7 +168,7 @@ export const BenchAllocationPage: React.FC = () => {
         <div className="theme-card p-4 rounded space-y-1">
           <p className="text-[10px] theme-subtext font-bold uppercase">Active Benches Allocated</p>
           <h2 className="text-2xl font-bold font-mono text-amber-500">
-            {loading ? '...' : `${allocations.length} Courtrooms`}
+            {loading ? '...' : `${upcomingAllocations.length} Courtrooms`}
           </h2>
         </div>
         <div className="theme-card p-4 rounded space-y-1">
@@ -176,11 +189,38 @@ export const BenchAllocationPage: React.FC = () => {
 
       {/* Allocations Table */}
       <div className="theme-card rounded overflow-hidden">
-        <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
-            <Building className="w-5 h-5 text-amber-500" />
-            Official Bench Roster & Courtroom Allocation List ({allocations.length})
-          </h2>
+        <div className="p-4 border-b border-subtle theme-elevated flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
+              <Building className="w-5 h-5 text-amber-500" />
+              Official Bench Roster
+            </h2>
+
+            {/* Filter Tabs: Upcoming vs Past */}
+            <div className="flex bg-slate-200 dark:bg-slate-800 p-0.5 rounded text-xs">
+              <button
+                onClick={() => setViewTab('upcoming')}
+                className={`px-3 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  viewTab === 'upcoming'
+                    ? 'bg-amber-500 text-white font-bold shadow-xs'
+                    : 'theme-subtext hover:theme-heading'
+                }`}
+              >
+                Active & Upcoming ({upcomingAllocations.length})
+              </button>
+              <button
+                onClick={() => setViewTab('past')}
+                className={`px-3 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                  viewTab === 'past'
+                    ? 'bg-slate-700 text-white font-bold shadow-xs'
+                    : 'theme-subtext hover:theme-heading'
+                }`}
+              >
+                Past Archive ({pastAllocations.length})
+              </button>
+            </div>
+          </div>
+
           <span className="text-xs theme-subtext font-mono">Live Database Sync</span>
         </div>
 
@@ -189,9 +229,11 @@ export const BenchAllocationPage: React.FC = () => {
             <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
             <span>Loading bench allocations from database...</span>
           </div>
-        ) : allocations.length === 0 ? (
+        ) : displayedAllocations.length === 0 ? (
           <div className="p-8 text-center theme-subtext text-xs">
-            No bench allocations created yet. Click "Create New Bench Allocation" to add one.
+            {viewTab === 'upcoming'
+              ? 'No active or upcoming bench allocations found. Click "Create New Bench Allocation" to schedule one.'
+              : 'No past bench allocations found in archive.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -207,8 +249,8 @@ export const BenchAllocationPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {allocations.map((a) => (
-                  <tr key={a.id}>
+                {displayedAllocations.map((a) => (
+                  <tr key={a.id} className={a.date < todayStr ? 'opacity-60 bg-slate-500/5' : ''}>
                     <td className="px-4 py-3 font-bold text-blue-500 whitespace-nowrap">{a.courtroom}</td>
                     <td className="px-4 py-3 font-semibold theme-heading whitespace-nowrap">
                       {a.judge?.name || 'Assigned Officer'}
@@ -219,8 +261,12 @@ export const BenchAllocationPage: React.FC = () => {
                       {a.date} ({a.startTime} - {a.endTime})
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="badge-supported px-2.5 py-1 rounded text-[10px] font-bold">
-                        {a.status}
+                      <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                        a.date < todayStr
+                          ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                          : 'badge-supported'
+                      }`}>
+                        {a.date < todayStr ? 'Concluded (Past)' : a.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -303,6 +349,7 @@ export const BenchAllocationPage: React.FC = () => {
                   <input
                     type="date"
                     required
+                    min={todayStr}
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded"
