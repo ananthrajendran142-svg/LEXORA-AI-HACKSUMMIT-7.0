@@ -5,10 +5,10 @@ import { AiReviewBadge } from '@/components/common/AiReviewBadge';
 export const HearingScheduler = () => {
   const [selectedCase, setSelectedCase] = useState('WP(C) 412/2024');
   const [suggestedSlot, setSuggestedSlot] = useState<any>({
-    date: '2026-08-14',
+    date: '2026-10-15',
     time: '10:30 AM',
     courtroom: 'Courtroom No. 4 (Bench II)',
-    rationale: 'Optimized for low backlog on Friday morning session. Presiding officer Justice Rajesh Sharma has scheduled commercial writ list.',
+    rationale: 'Optimized for low backlog on morning session. Presiding officer Justice Rajesh Sharma has scheduled commercial writ list.',
     workloadScore: 'Optimal (14% docket load)'
   });
   const [confirmed, setConfirmed] = useState(false);

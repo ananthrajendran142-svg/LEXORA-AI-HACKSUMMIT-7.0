@@ -9,19 +9,27 @@ interface NewCaseModalProps {
 }
 
 export const NewCaseModal: React.FC<NewCaseModalProps> = ({ isOpen, onClose, onAddCase }) => {
+  const todayIso = new Date().toISOString().split('T')[0];
+
   const [caseNumber, setCaseNumber] = useState(`WP(C) ${Math.floor(100 + Math.random() * 900)}/2026`);
   const [title, setTitle] = useState('');
   const [petitioner, setPetitioner] = useState('State Bank of India');
   const [respondent, setRespondent] = useState('Apex Enterprises Ltd.');
   const [division, setDivision] = useState('Commercial Division');
   const [priority, setPriority] = useState<'High' | 'Medium' | 'Low'>('High');
-  const [nextHearing, setNextHearing] = useState('2026-08-20');
+  const [nextHearing, setNextHearing] = useState(todayIso);
+  const [dateError, setDateError] = useState('');
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
+    if (nextHearing < todayIso) {
+      setDateError('Scheduled hearing date cannot be in the past. Please select today or a future date.');
+      return;
+    }
 
     const item: CaseItem = {
       id: `case_${Date.now()}`,
@@ -32,7 +40,7 @@ export const NewCaseModal: React.FC<NewCaseModalProps> = ({ isOpen, onClose, onA
       status: 'Pending',
       priority,
       division,
-      filingDate: new Date().toISOString().split('T')[0],
+      filingDate: todayIso,
       nextHearing,
       judge: 'Hon\'ble Justice Rajesh Sharma',
       court: 'High Court of Judicature',
@@ -141,10 +149,19 @@ export const NewCaseModal: React.FC<NewCaseModalProps> = ({ isOpen, onClose, onA
             <input
               type="date"
               required
+              min={todayIso}
               value={nextHearing}
-              onChange={(e) => setNextHearing(e.target.value)}
+              onChange={(e) => {
+                setNextHearing(e.target.value);
+                if (e.target.value >= todayIso) setDateError('');
+              }}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-md theme-heading outline-none focus:border-[var(--primary-accent)]"
             />
+            {dateError && (
+              <p className="text-[11px] text-rose-500 font-semibold mt-1 font-mono">
+                ⚠ {dateError}
+              </p>
+            )}
           </div>
 
           <button

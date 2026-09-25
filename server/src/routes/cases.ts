@@ -270,6 +270,13 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    if (req.body.nextHearing) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (req.body.nextHearing < todayStr) {
+        return res.status(400).json({ error: 'Scheduled hearing date cannot be set in the past.' });
+      }
+    }
+
     const newCase = await prisma.case.create({
       data: {
         caseNumber,
@@ -281,7 +288,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
         petitioner,
         respondent,
         filingDate: new Date().toISOString().split('T')[0],
-        nextHearing: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+        nextHearing: req.body.nextHearing || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
         court: court || 'High Court of Delhi',
         type: type || 'Writ Petition',
         judgeId: req.user?.role === 'JUDGE' ? req.user.id : undefined,
@@ -305,6 +312,13 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res: Response) =>
     const existing = await prisma.case.findUnique({ where: { id: caseId } });
     if (!existing) {
       return res.status(404).json({ error: 'Case not found' });
+    }
+
+    if (req.body.nextHearing) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (req.body.nextHearing < todayStr) {
+        return res.status(400).json({ error: 'Scheduled hearing date cannot be set in the past.' });
+      }
     }
 
     // Role-based authorization: Only assigned judge, assigned lawyer, staff, or admin can modify case
