@@ -60,6 +60,10 @@ export const LegalAssistant: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Record<number, boolean>>({});
 
+  // Unified Multi-Model & Research Depth Selector States
+  const [selectedModel, setSelectedModel] = useState<'hybrid' | 'gemini' | 'openai' | 'llama'>('hybrid');
+  const [researchDepth, setResearchDepth] = useState<'STANDARD' | 'DEEP' | 'DOCUMENT_ANALYSIS' | 'DRAFTING'>('STANDARD');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,7 +124,7 @@ export const LegalAssistant: React.FC = () => {
     if (e) e.preventDefault();
     let queryText = (customQuery || inputQuery).trim();
     if (attachmentText) {
-      queryText = `[ATTACHED MATERIAL: ${attachmentName}]\n${attachmentText.substring(0, 1500)}\n\nUSER QUESTION: ${queryText}`.trim();
+      queryText = `[ATTACHED FILE FOR ANALYSIS: ${attachmentName}]\n${attachmentText.substring(0, 2000)}\n\nUSER QUESTION: ${queryText}`.trim();
     }
 
     if (!queryText || loading) return;
@@ -145,7 +149,8 @@ export const LegalAssistant: React.FC = () => {
         caseId,
         conversationHistory,
         user?.role?.toUpperCase() || 'CITIZEN',
-        'STANDARD'
+        researchDepth,
+        selectedModel
       );
 
       setMessages((prev) => [
@@ -155,7 +160,7 @@ export const LegalAssistant: React.FC = () => {
           text: res.answer || res.text || 'No authoritative response generated.',
           grounded: Boolean(res.grounded),
           sources: res.sources || [],
-          mode: res.mode || (caseId ? 'CASE_SCOPED' : 'GENERAL_LEGAL'),
+          mode: res.mode || (selectedModel.toUpperCase() + ' · ' + researchDepth),
           evidenceStatus: res.evidence_status || (res.grounded ? 'SUPPORTED' : 'INSUFFICIENT_EVIDENCE'),
           evidenceStrength: res.evidence_strength || 'HIGH',
           currentness: res.currentness || 'VERIFIED',
@@ -185,19 +190,27 @@ export const LegalAssistant: React.FC = () => {
     }
   };
 
+  const quickPrompts = [
+    'Analyze document clauses & detect potential legal risks',
+    'What are the mandatory requirements for Section 138 NI Act cheque bounce notice?',
+    'Under what circumstances can High Court quash FIR under Section 482 CrPC / Sec 528 BNSS?',
+    'Draft a formal legal notice for breach of contract & non-payment',
+    'Summarize legal precedent & statutory provisions for Section 13(2) SARFAESI Act'
+  ];
+
   return (
-    <div className="theme-card p-6 shadow-sm space-y-6 flex flex-col min-h-[calc(100vh-140px)] font-sans">
+    <div className="theme-card p-6 shadow-sm space-y-4 flex flex-col min-h-[calc(100vh-140px)] font-sans">
       {/* ── Page Header Bar ────────────────────────────────────────────── */}
       <div className="border-b border-[#D9DEE4] dark:border-[#2B3742] pb-4 flex flex-wrap justify-between items-center gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Scale className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             <h1 className="text-xl sm:text-2xl font-serif font-bold theme-heading tracking-tight">
-              Legal Research Assistant
+              Unified AI Legal Assistant
             </h1>
           </div>
           <p className="text-xs theme-subtext mt-1">
-            Conversational RAG assistant to search statutory provisions, case precedents, and evidence materials.
+            All-in-one conversational AI combining Google Gemini, ChatGPT/OpenAI, and LEXORA Hybrid RAG Vector Search.
           </p>
         </div>
 
@@ -209,7 +222,7 @@ export const LegalAssistant: React.FC = () => {
             </span>
           ) : (
             <span className="text-[10px] font-mono theme-subtext uppercase tracking-wider theme-elevated px-2.5 py-1 rounded-sm border border-subtle">
-              GENERAL LEGAL RESEARCH
+              UNIFIED LEGAL RESEARCH
             </span>
           )}
 
@@ -219,29 +232,106 @@ export const LegalAssistant: React.FC = () => {
             className="px-3 py-1.5 theme-secondary-btn rounded-sm text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Plus className="w-3.5 h-3.5 text-[var(--primary-accent)]" />
-            <span>New Conversation</span>
+            <span>New Session</span>
           </button>
         </div>
       </div>
 
+      {/* ── Multi-Model & Engine Switcher Bar ────────────────────────────── */}
+      <div className="theme-elevated p-3 rounded-lg border border-subtle flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold text-[10px] theme-subtext uppercase tracking-wider">AI ENGINE MODEL:</span>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSelectedModel('hybrid')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer border ${
+                selectedModel === 'hybrid'
+                  ? 'theme-primary-btn font-bold shadow-xs border-[var(--primary-accent)]'
+                  : 'theme-card theme-subtext border-subtle hover:theme-heading'
+              }`}
+            >
+              ⚡ LEXORA Hybrid RAG
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedModel('gemini')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer border ${
+                selectedModel === 'gemini'
+                  ? 'bg-blue-600 text-white font-bold shadow-xs border-blue-700'
+                  : 'theme-card theme-subtext border-subtle hover:theme-heading'
+              }`}
+            >
+              🤖 Gemini 1.5 Pro
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedModel('openai')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer border ${
+                selectedModel === 'openai'
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs border-emerald-700'
+                  : 'theme-card theme-subtext border-subtle hover:theme-heading'
+              }`}
+            >
+              🧠 ChatGPT (GPT-4o)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedModel('llama')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer border ${
+                selectedModel === 'llama'
+                  ? 'bg-purple-600 text-white font-bold shadow-xs border-purple-700'
+                  : 'theme-card theme-subtext border-subtle hover:theme-heading'
+              }`}
+            >
+              🔒 Secure Llama 3
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold text-[10px] theme-subtext uppercase tracking-wider">RESEARCH MODE:</span>
+          <select
+            value={researchDepth}
+            onChange={(e) => setResearchDepth(e.target.value as any)}
+            className="px-2.5 py-1 theme-card border border-subtle rounded-md text-[11px] font-bold theme-heading outline-none cursor-pointer"
+          >
+            <option value="STANDARD">⚡ Standard Legal Q&A</option>
+            <option value="DEEP">🔍 Deep Precedent & Statute RAG</option>
+            <option value="DOCUMENT_ANALYSIS">📄 Document Clause & Risk Review</option>
+            <option value="DRAFTING">📜 Order & Motion Drafter</option>
+          </select>
+        </div>
+      </div>
+
       {/* ── Conversation Scroll Container ────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto space-y-6 pr-1 max-h-[60vh] min-h-[350px]">
+      <div className="flex-1 overflow-y-auto space-y-6 pr-1 max-h-[55vh] min-h-[350px]">
         {/* Initial Empty Welcome State */}
         {messages.length === 0 && (
-          <div className="min-h-[280px] flex flex-col items-center justify-center text-center py-8 space-y-4 my-auto">
+          <div className="min-h-[280px] flex flex-col items-center justify-center text-center py-6 space-y-4 my-auto">
             <div className="w-12 h-12 rounded-full border border-subtle theme-card flex items-center justify-center shadow-md">
               <Scale className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
 
-            <div className="space-y-1.5 max-w-md">
-              <h2 className="text-lg font-serif font-bold theme-heading tracking-tight">LEXORA Legal Research Assistant</h2>
+            <div className="space-y-1.5 max-w-lg">
+              <h2 className="text-lg font-serif font-bold theme-heading tracking-tight">Unified AI Legal Assistant & Model Switcher</h2>
               <p className="text-xs theme-subtext leading-relaxed">
-                Ask a legal question in plain natural language. LEXORA searches indexed statutes, binding precedents, and authorized materials to provide evidence-grounded responses.
+                Choose your preferred AI model (Gemini, ChatGPT, Llama, or LEXORA Hybrid RAG), attach documents for instant risk analysis, or query statutory acts and court precedents.
               </p>
             </div>
 
-            <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 theme-elevated px-3 py-1 rounded-sm border border-subtle">
-              Ask a legal question to begin.
+            {/* Quick Action Preset Pills */}
+            <div className="flex flex-wrap justify-center gap-2 max-w-xl">
+              {quickPrompts.map((prompt, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendMessage(undefined, prompt)}
+                  className="px-3 py-1.5 theme-elevated border border-subtle rounded-md text-[11px] theme-heading hover:border-[var(--primary-accent)] cursor-pointer text-left transition-all"
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
           </div>
         )}
