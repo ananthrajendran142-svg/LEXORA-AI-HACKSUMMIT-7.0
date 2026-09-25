@@ -268,13 +268,6 @@ export const CitizenDashboard = () => {
     }
   };
 
-  const checklist = [
-    { title: t.item1, done: true },
-    { title: t.item2, done: true },
-    { title: t.item3, done: false },
-    { title: t.item4, done: true }
-  ];
-
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
@@ -476,26 +469,6 @@ export const CitizenDashboard = () => {
             )}
           </div>
         )}
-      </div>
-
-      {/* Citizen Action Checklist */}
-      <div className="theme-card rounded p-6 space-y-4">
-        <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
-          <CheckSquare className="w-5 h-5 text-amber-500" />
-          {t.checklistTitle}
-        </h2>
-        <div className="space-y-2.5">
-          {checklist.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3.5 theme-elevated rounded border border-subtle text-xs">
-              <span className={item.done ? 'line-through theme-subtext' : 'theme-heading font-semibold'}>
-                {item.title}
-              </span>
-              <span className={`px-2.5 py-1 rounded text-[10px] font-extrabold ${item.done ? 'badge-supported' : 'badge-pending'}`}>
-                {item.done ? t.completed : t.pending}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Modals */}
