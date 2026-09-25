@@ -182,7 +182,7 @@ export const api = {
   getDrafts: () => request<{ success: boolean; drafts: any[] }>('/drafts'),
 
   saveDraft: (data: { caseId: string; docType?: string; title: string; content: string }) =>
-    request<{ success: boolean; draft: any }>('/drafts', {
+    request<{ success: boolean; draft?: any; error?: string; details?: string }>('/drafts', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

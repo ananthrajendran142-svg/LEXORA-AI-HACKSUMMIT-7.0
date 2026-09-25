@@ -52,7 +52,7 @@ router.get('/health', authenticateToken, requireRole(['ADMIN']), async (req: Req
       headers: { 'X-Internal-API-Key': getInternalApiKey() },
     });
     if (r.ok) {
-      const stats = await r.json();
+      const stats: any = await r.json();
       statusPayload.checks.legalCorpus = {
         status: 'HEALTHY',
         totalChunks: stats.total_chunks,

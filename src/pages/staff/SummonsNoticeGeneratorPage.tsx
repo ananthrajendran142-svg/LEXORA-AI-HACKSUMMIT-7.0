@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileCode, Printer, Download, Send, ShieldCheck, Building, CheckCircle, FileText, Save, Loader2 } from 'lucide-react';
+import { FileCode, Printer, Download, Send, ShieldCheck, Building, CheckCircle, FileText, Save, Loader2, AlertCircle } from 'lucide-react';
 import { api } from '../../services/api';
 
 export const SummonsNoticeGeneratorPage: React.FC = () => {
@@ -139,7 +139,7 @@ SECURED CREDITOR AUTHORIZED OFFICER
                             templateType === 'ni_138' ? 'Demand Notice Sec 138 NI Act' : 'SARFAESI 13(2) Notice';
 
       const res = await api.saveDraft({
-        caseId: caseId || '1',
+        caseId: caseNumber || caseId || '1',
         docType: templateType === 'cpc_summons' ? 'Summons' : 'Notice',
         title: `${docTypeTitle} - ${caseNumber}`,
         content
@@ -147,10 +147,12 @@ SECURED CREDITOR AUTHORIZED OFFICER
 
       if (res.success && res.draft) {
         setSaveSuccess(`✓ Saved draft notice to case docket (ID: ${res.draft.id}). Status: DRAFT (Human Review Required).`);
-        setTimeout(() => setSaveSuccess(''), 6000);
+        setTimeout(() => setSaveSuccess(''), 8000);
+      } else {
+        setSaveSuccess(`Failed to save draft: ${res.error || (res as any).details || 'Unknown error'}`);
       }
     } catch (err: any) {
-      setSaveSuccess(`Failed to save draft: ${err.message}`);
+      setSaveSuccess(`Failed to save draft: ${err.message || 'Server connection error'}`);
     } finally {
       setSaving(false);
     }
@@ -206,8 +208,16 @@ SECURED CREDITOR AUTHORIZED OFFICER
 
       {/* Action Status */}
       {saveSuccess && (
-        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs rounded-xl flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+        <div className={`p-3.5 border text-xs rounded-xl flex items-center gap-2 ${
+          saveSuccess.startsWith('Failed') || saveSuccess.startsWith('Error')
+            ? 'bg-red-500/10 border-red-500/30 text-red-800 dark:text-red-200'
+            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+        }`}>
+          {saveSuccess.startsWith('Failed') || saveSuccess.startsWith('Error') ? (
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+          ) : (
+            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          )}
           <span>{saveSuccess}</span>
         </div>
       )}
