@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Clock, Calendar, AlertTriangle, FileText, CheckCircle, XCircle, Scale, ChevronRight, Eye, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api } from '@/services/api';
 
 export const JudgeDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [cases, setCases] = useState<any[]>([]);
   const [hearings, setHearings] = useState<any[]>([]);
@@ -205,10 +206,16 @@ export const JudgeDashboard = () => {
               ) : (
                 mattersRequiringAttention.map((m, idx) => (
                   <tr key={m.id || idx} className="hover:theme-elevated transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-[var(--primary-accent)] whitespace-nowrap">
+                    <td
+                      onClick={() => navigate(`/judge/cases/${encodeURIComponent(m.id || m.caseNumber)}`)}
+                      className="px-4 py-3 font-mono font-bold text-[var(--primary-accent)] whitespace-nowrap cursor-pointer hover:underline"
+                    >
                       {m.caseNumber}
                     </td>
-                    <td className="px-4 py-3 font-medium theme-heading">
+                    <td
+                      onClick={() => navigate(`/judge/cases/${encodeURIComponent(m.id || m.caseNumber)}`)}
+                      className="px-4 py-3 font-medium theme-heading cursor-pointer hover:text-blue-500"
+                    >
                       {m.title || `${m.petitioner} v. ${m.respondent}`}
                     </td>
                     <td className="px-4 py-3 theme-subtext">
@@ -225,7 +232,7 @@ export const JudgeDashboard = () => {
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <Link
-                        to={`/judge/cases`}
+                        to={`/judge/cases/${encodeURIComponent(m.id || m.caseNumber)}`}
                         className="px-2.5 py-1 theme-primary-btn text-[11px] font-semibold rounded-sm inline-flex items-center gap-1"
                       >
                         <Eye className="w-3 h-3 text-white" />
@@ -272,34 +279,43 @@ export const JudgeDashboard = () => {
                   </td>
                 </tr>
               ) : (
-                todaysHearings.map((h, i) => (
-                  <tr key={h.id || i} className="hover:theme-elevated transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{h.time || '10:30 AM'}</td>
-                    <td className="px-4 py-3 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap">
-                      {h.case?.caseNumber || 'CASE-REF'}
-                    </td>
-                    <td className="px-4 py-3 font-medium theme-heading">
-                      {h.case?.title || 'State vs. Accused'}
-                    </td>
-                    <td className="px-4 py-3 theme-subtext whitespace-nowrap">
-                      {h.courtRoom || h.case?.court || 'Bench II'}
-                    </td>
-                    <td className="px-4 py-3 theme-subtext whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
-                        {h.type || h.status || 'Hearing'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <Link
-                        to="/judge/cases"
-                        className="px-2.5 py-1 theme-secondary-btn text-[11px] font-semibold rounded inline-flex items-center gap-1 cursor-pointer"
+                todaysHearings.map((h, i) => {
+                  const targetCaseId = h.caseId || h.case?.id || h.case?.caseNumber || '';
+                  return (
+                    <tr key={h.id || i} className="hover:theme-elevated transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{h.time || '10:30 AM'}</td>
+                      <td
+                        onClick={() => targetCaseId && navigate(`/judge/cases/${encodeURIComponent(targetCaseId)}`)}
+                        className="px-4 py-3 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap cursor-pointer hover:underline"
                       >
-                        <Eye className="w-3 h-3 text-[var(--primary-accent)]" />
-                        <span>Open Docket</span>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                        {h.case?.caseNumber || 'CASE-REF'}
+                      </td>
+                      <td
+                        onClick={() => targetCaseId && navigate(`/judge/cases/${encodeURIComponent(targetCaseId)}`)}
+                        className="px-4 py-3 font-medium theme-heading cursor-pointer hover:text-blue-500"
+                      >
+                        {h.case?.title || 'State vs. Accused'}
+                      </td>
+                      <td className="px-4 py-3 theme-subtext whitespace-nowrap">
+                        {h.courtRoom || h.case?.court || 'Bench II'}
+                      </td>
+                      <td className="px-4 py-3 theme-subtext whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
+                          {h.type || h.status || 'Hearing'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <Link
+                          to={targetCaseId ? `/judge/cases/${encodeURIComponent(targetCaseId)}` : '/judge/cases'}
+                          className="px-2.5 py-1 theme-secondary-btn text-[11px] font-semibold rounded inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3 h-3 text-[var(--primary-accent)]" />
+                          <span>Open Docket</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
