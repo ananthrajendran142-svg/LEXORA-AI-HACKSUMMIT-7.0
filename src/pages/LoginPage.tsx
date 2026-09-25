@@ -41,6 +41,9 @@ export const LoginPage: React.FC = () => {
   // Populate seed credentials into form when role card is picked
   const handleRoleQuickSelect = (role: 'judge' | 'lawyer' | 'staff' | 'citizen' | 'admin') => {
     setLoginRole(role);
+    if (role !== 'admin') {
+      setRegRole(role);
+    }
     if (role === 'judge') {
       setLoginEmail('judge@lexora.gov.in');
       setLoginPassword('lexora123');
@@ -112,9 +115,9 @@ export const LoginPage: React.FC = () => {
         email: regEmail,
         password: regPassword,
         role: regRole,
-        designation: regDesignation || `${regRole.toUpperCase()} Officer`,
-        court: regCourt || 'High Court of Judicature',
-        officialId: regOfficialId || 'N/A'
+        designation: regRole === 'citizen' ? 'Litigant Citizen' : (regDesignation || `${regRole.toUpperCase()} Officer`),
+        court: regRole === 'citizen' ? 'Public Judicial Portal' : (regCourt || 'High Court of Judicature'),
+        officialId: regRole === 'citizen' ? 'CITIZEN-SELF' : (regOfficialId || 'N/A')
       });
 
       if (data.pending) {
@@ -125,7 +128,9 @@ export const LoginPage: React.FC = () => {
       } else {
         setRegStatusMsg({
           type: 'success',
-          msg: 'Account created and verified! You may now sign in.'
+          msg: regRole === 'citizen'
+            ? 'Litigant Citizen account registered and verified! You may now sign in directly.'
+            : 'Account created and verified! You may now sign in.'
         });
       }
     } catch (err: any) {
@@ -270,9 +275,15 @@ export const LoginPage: React.FC = () => {
           {/* REGISTRATION FORM */}
           {activeTab === 'register' && (
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-sm text-xs text-amber-900 dark:text-amber-200">
-                <strong>Official Registration Rule:</strong> Judicial Officers, Advocates, and Court Staff registrations require manual verification by the National Judicial Administrator before portal entry is authorized.
-              </div>
+              {regRole === 'citizen' ? (
+                <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-sm text-xs text-sky-900 dark:text-sky-200">
+                  <strong>Citizen Account Registration:</strong> Litigant citizen accounts receive immediate access to public case tracking, cause lists, order downloads, and e-filing services.
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-sm text-xs text-amber-900 dark:text-amber-200">
+                  <strong>Official Registration Rule:</strong> Judicial Officers, Advocates, and Court Staff registrations require manual verification by the National Judicial Administrator before portal entry is authorized.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -282,75 +293,81 @@ export const LoginPage: React.FC = () => {
                     required
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
-                    placeholder="e.g. Adv. Rajesh Deshmukh"
+                    placeholder={regRole === 'citizen' ? "e.g. Ananth Rajendran" : "e.g. Adv. Rajesh Deshmukh"}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold theme-subtext mb-1">Official Email Address:</label>
+                  <label className="block text-xs font-semibold theme-subtext mb-1">
+                    {regRole === 'citizen' ? "Email Address:" : "Official Email Address:"}
+                  </label>
                   <input
                     type="email"
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="e.g. rajesh@judiciary.gov.in"
+                    placeholder={regRole === 'citizen' ? "e.g. citizen@gmail.com" : "e.g. rajesh@judiciary.gov.in"}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={`grid grid-cols-1 ${regRole === 'citizen' ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-3`}>
                 <div>
-                  <label className="block text-xs font-semibold theme-subtext mb-1">Judicial Designation Role:</label>
+                  <label className="block text-xs font-semibold theme-subtext mb-1">Account Category / Role:</label>
                   <select
                     value={regRole}
                     onChange={(e) => setRegRole(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
                   >
-                    <option value="judge">Hon'ble Judge</option>
-                    <option value="lawyer">Advocate / Lawyer</option>
-                    <option value="staff">Court Bench Registrar / Staff</option>
                     <option value="citizen">Litigant Citizen</option>
+                    <option value="lawyer">Advocate / Lawyer</option>
+                    <option value="judge">Hon'ble Judge</option>
+                    <option value="staff">Court Bench Registrar / Staff</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold theme-subtext mb-1">Bar / Judicial ID Number:</label>
-                  <input
-                    type="text"
-                    required
-                    value={regOfficialId}
-                    onChange={(e) => setRegOfficialId(e.target.value)}
-                    placeholder="e.g. BAR/2024/9912 or JUD/1042"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
-                  />
-                </div>
+                {regRole !== 'citizen' && (
+                  <div>
+                    <label className="block text-xs font-semibold theme-subtext mb-1">Bar / Judicial ID Number:</label>
+                    <input
+                      type="text"
+                      required
+                      value={regOfficialId}
+                      onChange={(e) => setRegOfficialId(e.target.value)}
+                      placeholder="e.g. BAR/2024/9912 or JUD/1042"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold theme-subtext mb-1">Designation Title:</label>
-                  <input
-                    type="text"
-                    value={regDesignation}
-                    onChange={(e) => setRegDesignation(e.target.value)}
-                    placeholder="e.g. Senior Bench Advocate"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
-                  />
-                </div>
+              {regRole !== 'citizen' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold theme-subtext mb-1">Designation Title:</label>
+                    <input
+                      type="text"
+                      value={regDesignation}
+                      onChange={(e) => setRegDesignation(e.target.value)}
+                      placeholder="e.g. Senior Bench Advocate"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold theme-subtext mb-1">Court / Bar Association:</label>
-                  <input
-                    type="text"
-                    value={regCourt}
-                    onChange={(e) => setRegCourt(e.target.value)}
-                    placeholder="e.g. High Court of Judicature"
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold theme-subtext mb-1">Court / Bar Association:</label>
+                    <input
+                      type="text"
+                      value={regCourt}
+                      onChange={(e) => setRegCourt(e.target.value)}
+                      placeholder="e.g. High Court of Judicature"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#151E27] border border-subtle rounded-sm text-xs theme-heading outline-none focus:border-[var(--primary-accent)]"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Password with Real-Time Strength Meter */}
               <div>
@@ -392,7 +409,7 @@ export const LoginPage: React.FC = () => {
                 className="w-full theme-primary-btn text-xs font-semibold py-2.5 rounded-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <FileBadge className="w-4 h-4" />
-                <span>{loading ? 'Submitting Registration...' : 'Submit Official Account Registration'}</span>
+                <span>{loading ? 'Submitting Registration...' : regRole === 'citizen' ? 'Submit Citizen Registration' : 'Submit Official Account Registration'}</span>
               </button>
             </form>
           )}
