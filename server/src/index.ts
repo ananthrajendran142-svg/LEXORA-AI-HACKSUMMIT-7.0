@@ -63,27 +63,58 @@ if (isProd) {
 
 const app = express();
 const server = http.createServer(app);
-const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 
-// Trust the first proxy hop (Nginx reverse proxy in production)
+// Trust proxy for Render / Cloud load balancers
 app.set('trust proxy', 1);
+
+const parseAllowedOrigins = (): string[] => {
+  const configured = (process.env.CLIENT_URL || '')
+    .split(',')
+    .map((u) => u.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  const defaults = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+  ];
+
+  return Array.from(new Set([...configured, ...defaults]));
+};
+
+const isOriginAllowed = (origin?: string): boolean => {
+  if (!origin) return true; // Non-browser / server-to-server requests
+  const normalized = origin.trim().replace(/\/+$/, '');
+  const allowed = parseAllowedOrigins();
+  if (allowed.includes(normalized)) return true;
+  // Allow onrender.com subdomains in production
+  if (isProd && (normalized.endsWith('.onrender.com') || normalized.endsWith('.vercel.app'))) {
+    return true;
+  }
+  return false;
+};
 
 const io = new SocketIOServer(server, {
   cors: {
-    origin: clientOrigin,
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS Access Denied on Socket.io'));
+      }
+    },
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = isProd
-  ? [process.env.CLIENT_URL].filter(Boolean) as string[]
-  : [clientOrigin, 'http://localhost:5173', 'http://localhost:3000'];
-
 // ── Security Middlewares ───────────────────────────────────────────────────────
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'same-site' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginOpenerPolicy: { policy: 'same-origin' },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   hsts: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
@@ -93,7 +124,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
+      connectSrc: ["'self'", "ws:", "wss:", "*"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
@@ -103,13 +134,16 @@ app.use(helmet({
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
+      console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${parseAllowedOrigins().join(', ')}`);
       callback(new Error('CORS Access Denied: Origin not permitted by LEXORA security policy.'));
     }
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID', 'X-Internal-API-Key'],
 }));
 
 app.use(express.json({ limit: '10mb' }));

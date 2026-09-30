@@ -1,6 +1,9 @@
 services:
+  # ============================================================================
+  # 1. FRONTEND STATIC SITE
+  # ============================================================================
   - type: web
-    name: lexora-ai
+    name: lexora-ai-frontend
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -12,3 +15,67 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: lexora-ai-server
+          property: host
+          path: /api
+
+  # ============================================================================
+  # 2. NODE.JS / EXPRESS API GATEWAY
+  # ============================================================================
+  - type: web
+    name: lexora-ai-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run prisma:generate && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: lexora-ai-frontend
+          property: host
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: INTERNAL_API_KEY
+        generateValue: true
+      - key: BACKUP_ENCRYPTION_KEY
+        generateValue: true
+      - key: FASTAPI_BASE_URL
+        fromService:
+          type: web
+          name: lexora-ai-backend
+          property: host
+      - key: DATABASE_URL
+        sync: false
+
+  # ============================================================================
+  # 3. FASTAPI AI PIPELINE MICROSERVICE
+  # ============================================================================
+  - type: web
+    name: lexora-ai-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: lexora-ai-server
+          envVarKey: INTERNAL_API_KEY
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

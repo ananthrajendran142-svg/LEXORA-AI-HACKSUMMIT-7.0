@@ -25,34 +25,37 @@ function hashToken(token: string): string {
 }
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string) {
-  const sameSiteMode = isProd ? 'strict' : 'lax';
+  const sameSiteMode = isProd ? 'none' : 'lax';
+  const secureMode = isProd ? true : false;
 
   res.cookie('access_token', accessToken, {
     httpOnly: true,
-    secure: isProd,
+    secure: secureMode,
     sameSite: sameSiteMode,
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
-    secure: isProd,
+    secure: secureMode,
     sameSite: sameSiteMode,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   res.cookie('csrf_token', csrfToken, {
     httpOnly: false, // Non-HttpOnly so client JavaScript can read and mirror in X-CSRF-Token header
-    secure: isProd,
+    secure: secureMode,
     sameSite: sameSiteMode,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
 function clearAuthCookies(res: Response) {
-  res.clearCookie('access_token');
-  res.clearCookie('refresh_token');
-  res.clearCookie('csrf_token');
+  const sameSiteMode = isProd ? 'none' : 'lax';
+  const secureMode = isProd ? true : false;
+  res.clearCookie('access_token', { sameSite: sameSiteMode, secure: secureMode });
+  res.clearCookie('refresh_token', { sameSite: sameSiteMode, secure: secureMode });
+  res.clearCookie('csrf_token', { sameSite: sameSiteMode, secure: secureMode });
 }
 
 // POST /api/auth/register - Official Registration with Argon2id

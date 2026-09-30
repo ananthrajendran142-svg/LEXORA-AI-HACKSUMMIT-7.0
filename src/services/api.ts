@@ -1,5 +1,15 @@
 // Frontend API Client connected to Node.js / Express Backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export function getApiBaseUrl(): string {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 function getCsrfToken(): string | null {
   if (typeof document === 'undefined') return null;
@@ -65,11 +75,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth
-  login: (credentials: { email?: string; password?: string; role?: string }) =>
-    request<{ token: string; csrfToken?: string; user: any }>('/auth/login', {
+  login: async (credentials: { email?: string; password?: string; role?: string }) => {
+    const res = await request<{ token: string; csrfToken?: string; user: any }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
-    }),
+    });
+    if (res?.token) {
+      setAuthToken(res.token);
+    }
+    return res;
+  },
 
   register: (userData: any) =>
     request<any>('/auth/register', {
@@ -77,10 +92,12 @@ export const api = {
       body: JSON.stringify(userData),
     }),
 
-  logout: () =>
-    request<any>('/auth/logout', {
+  logout: async () => {
+    removeAuthToken();
+    return request<any>('/auth/logout', {
       method: 'POST',
-    }),
+    }).catch(() => {});
+  },
 
   getCurrentUser: () => request<{ user: any }>('/auth/me'),
 

@@ -1,7 +1,7 @@
 // Client for AI Services routed securely through Express API Gateway (/api/ai/...)
 // Direct browser calls to FastAPI (Port 8000) are eliminated for production security architecture.
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+import { getApiBaseUrl, getAuthToken } from './api';
 
 function getCsrfToken(): string | null {
   if (typeof document === 'undefined') return null;
@@ -12,18 +12,24 @@ function getCsrfToken(): string | null {
 async function fastApiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const method = (options.method || 'POST').toUpperCase();
   const csrfToken = getCsrfToken();
+  const token = getAuthToken();
+  const baseUrl = getApiBaseUrl();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
     headers['X-CSRF-Token'] = csrfToken;
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/ai${endpoint}`, {
+    const res = await fetch(`${baseUrl}/ai${endpoint}`, {
       ...options,
       credentials: 'include',
       headers,
@@ -48,12 +54,18 @@ export const fastApi = {
     formData.append('file', file);
 
     const csrfToken = getCsrfToken();
+    const token = getAuthToken();
+    const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {};
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
 
-    const res = await fetch(`${API_BASE_URL}/ai/extract`, {
+    const res = await fetch(`${baseUrl}/ai/extract`, {
       method: 'POST',
       credentials: 'include',
       headers,
