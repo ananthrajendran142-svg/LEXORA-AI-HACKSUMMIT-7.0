@@ -10,17 +10,17 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 
-// Role Portals (Eagerly Loaded)
-import { JudgeDashboard } from '@/pages/judge/JudgeDashboard';
-import { CaseManagement } from '@/pages/judge/CaseManagement';
-import { LawyerDashboard } from '@/pages/lawyer/LawyerDashboard';
-import { StaffDashboard } from '@/pages/staff/StaffDashboard';
-import { CitizenDashboard } from '@/pages/citizen/CitizenDashboard';
-import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-import { CaseWorkspacePage } from '@/pages/cases/CaseWorkspacePage';
-import { HackathonDemoPage } from '@/pages/demo/HackathonDemoPage';
+// Role Portals (Lazy-Loaded for Optimal Chunking)
+const JudgeDashboard = lazy(() => import('@/pages/judge/JudgeDashboard').then((m) => ({ default: m.JudgeDashboard })));
+const CaseManagement = lazy(() => import('@/pages/judge/CaseManagement').then((m) => ({ default: m.CaseManagement })));
+const LawyerDashboard = lazy(() => import('@/pages/lawyer/LawyerDashboard').then((m) => ({ default: m.LawyerDashboard })));
+const StaffDashboard = lazy(() => import('@/pages/staff/StaffDashboard').then((m) => ({ default: m.StaffDashboard })));
+const CitizenDashboard = lazy(() => import('@/pages/citizen/CitizenDashboard').then((m) => ({ default: m.CitizenDashboard })));
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const HackathonDemoPage = lazy(() => import('@/pages/demo/HackathonDemoPage').then((m) => ({ default: m.HackathonDemoPage })));
 
 // Lazy-Loaded Heavy Feature Pages (Phase 19.1 Bundle Optimization)
+const CaseWorkspacePage = lazy(() => import('@/pages/cases/CaseWorkspacePage'));
 const SummonsNoticeGeneratorPage = lazy(() => import('@/pages/staff/SummonsNoticeGeneratorPage'));
 const CheckCaseStatusPage = lazy(() => import('@/pages/citizen/CheckCaseStatusPage'));
 const ViewCauseListsPage = lazy(() => import('@/pages/citizen/ViewCauseListsPage'));

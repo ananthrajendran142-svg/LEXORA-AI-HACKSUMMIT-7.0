@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,10 +17,11 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { api } from '@/services/api';
-import { CaseSummarizer } from '@/pages/ai/CaseSummarizer';
-import { SimilarCaseFinder } from '@/pages/ai/SimilarCaseFinder';
-import { LegalAssistant } from '@/pages/ai/LegalAssistant';
 import { EvidenceCitationViewer } from '@/components/common/EvidenceCitationViewer';
+
+const CaseSummarizer = lazy(() => import('@/pages/ai/CaseSummarizer'));
+const SimilarCaseFinder = lazy(() => import('@/pages/ai/SimilarCaseFinder'));
+const LegalAssistant = lazy(() => import('@/pages/ai/LegalAssistant'));
 
 type CanvasTab =
   | 'Overview'
@@ -315,9 +316,21 @@ export const CaseWorkspacePage: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'Case Summary' && <CaseSummarizer />}
-          {activeTab === 'Precedent Search' && <SimilarCaseFinder />}
-          {activeTab === 'Legal Research' && <LegalAssistant />}
+          {activeTab === 'Case Summary' && (
+            <Suspense fallback={<div className="p-8 text-center text-xs theme-subtext">Loading AI Summarizer...</div>}>
+              <CaseSummarizer />
+            </Suspense>
+          )}
+          {activeTab === 'Precedent Search' && (
+            <Suspense fallback={<div className="p-8 text-center text-xs theme-subtext">Loading Precedent Search...</div>}>
+              <SimilarCaseFinder />
+            </Suspense>
+          )}
+          {activeTab === 'Legal Research' && (
+            <Suspense fallback={<div className="p-8 text-center text-xs theme-subtext">Loading Legal Assistant...</div>}>
+              <LegalAssistant />
+            </Suspense>
+          )}
 
           {activeTab === 'Hearings' && (
             <div className="theme-card p-5 space-y-4">
