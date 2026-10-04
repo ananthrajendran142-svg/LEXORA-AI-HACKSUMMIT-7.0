@@ -151,4 +151,14 @@ export const fastApi = {
         provider: model || 'gemini',
       }),
     }),
+
+  // Multilingual judicial translator
+  translate: (text: string, targetLang: string) =>
+    fastApiRequest<{ success: boolean; translated_text: string; target_lang: string }>('/translate', {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+        target_lang: targetLang,
+      }),
+    }),
 };

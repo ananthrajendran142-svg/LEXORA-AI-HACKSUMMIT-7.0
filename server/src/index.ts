@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
@@ -22,6 +23,7 @@ import notificationsRoutes from './routes/notifications.js';
 import { validateCryptoConfig } from './utils/cryptoUtils.js';
 import { requestLogger } from './middleware/logger.js';
 import systemRoutes from './routes/system.js';
+import { getFastApiBaseUrl } from './utils/urlUtils.js';
 
 dotenv.config();
 
@@ -44,7 +46,7 @@ if (isProd) {
     { name: 'ENCRYPTION_KEY', minLen: 32 },
     { name: 'INTERNAL_API_KEY', minLen: 24 },
     { name: 'BACKUP_ENCRYPTION_KEY', minLen: 32 },
-    { name: 'CLIENT_URL', minLen: 8 },
+    { name: 'CLIENT_URL', minLen: 4 },
   ];
   const failures: string[] = [];
   for (const { name, minLen } of requiredSecrets) {
@@ -73,15 +75,27 @@ const parseAllowedOrigins = (): string[] => {
     .map((u) => u.trim().replace(/\/+$/, ''))
     .filter(Boolean);
 
+  const expanded: string[] = [];
+  for (const u of configured) {
+    expanded.push(u);
+    if (!u.startsWith('http://') && !u.startsWith('https://')) {
+      expanded.push(`https://${u}`);
+      expanded.push(`http://${u}`);
+    } else {
+      expanded.push(u.replace(/^https?:\/\//, ''));
+    }
+  }
+
   const defaults = [
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:5000',
   ];
 
-  return Array.from(new Set([...configured, ...defaults]));
+  return Array.from(new Set([...expanded, ...defaults]));
 };
 
 const isOriginAllowed = (origin?: string): boolean => {
@@ -89,8 +103,17 @@ const isOriginAllowed = (origin?: string): boolean => {
   const normalized = origin.trim().replace(/\/+$/, '');
   const allowed = parseAllowedOrigins();
   if (allowed.includes(normalized)) return true;
-  // Allow onrender.com subdomains in production
-  if (isProd && (normalized.endsWith('.onrender.com') || normalized.endsWith('.vercel.app'))) {
+
+  const host = normalized.replace(/^https?:\/\//, '').split(':')[0];
+  if (allowed.includes(host)) return true;
+
+  // Wildcard allowances for cloud deployments
+  if (
+    host.endsWith('.onrender.com') ||
+    host.endsWith('.vercel.app') ||
+    host.endsWith('.pages.dev') ||
+    host.endsWith('.netlify.app')
+  ) {
     return true;
   }
   return false;
@@ -217,7 +240,7 @@ app.get('/api/ready', async (_req, res) => {
 
   // Check 2: FastAPI AI backend
   try {
-    const fastapiUrl = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
+    const fastapiUrl = getFastApiBaseUrl();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
     const r = await fetch(`${fastapiUrl}/health`, { signal: controller.signal });
@@ -236,6 +259,26 @@ app.get('/api/ready', async (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ── Static Frontend Serving & SPA Catch-All ──────────────────────────────────
+const distCandidates = [
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), '../dist'),
+  path.resolve(__dirname, '../../dist'),
+  path.resolve(__dirname, '../dist'),
+];
+const distPath = distCandidates.find((p) => fs.existsSync(path.join(p, 'index.html')));
+
+if (distPath) {
+  console.log(`[LEXORA] Serving frontend static assets from: ${distPath}`);
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // ── Socket.io Real-time event handling ───────────────────────────────────────
 io.on('connection', (socket) => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, ShieldCheck, Database, Cpu, Server, HardDrive, RefreshCw, AlertTriangle, CheckCircle2, Clock, Lock, FileText, AlertCircle, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/services/api';
 
 export const SystemHealth: React.FC = () => {
   const { user } = useAuth();
@@ -19,21 +20,19 @@ export const SystemHealth: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [resHealth, resBackup] = await Promise.all([
-        fetch('/api/system/health', { credentials: 'include' }),
-        fetch('/api/system/backup-status', { credentials: 'include' }),
+      const [resHealth, resBackup] = await Promise.allSettled([
+        api.getSystemHealth(),
+        api.getBackupStatus(),
       ]);
 
-      if (resHealth.ok) {
-        const data = await resHealth.json();
-        setHealthData(data.system);
+      if (resHealth.status === 'fulfilled' && resHealth.value?.system) {
+        setHealthData(resHealth.value.system);
       } else {
         setError('Failed to fetch system health status');
       }
 
-      if (resBackup.ok) {
-        const data = await resBackup.json();
-        setBackupData(data);
+      if (resBackup.status === 'fulfilled' && resBackup.value) {
+        setBackupData(resBackup.value);
       }
     } catch (err: any) {
       setError(err.message || 'System health service unreachable');
@@ -46,28 +45,9 @@ export const SystemHealth: React.FC = () => {
     setResetting(true);
     setResetMessage(null);
     try {
-      // Fetch CSRF token from cookie if available
-      const match = document.cookie.match(new RegExp('(^| )csrf_token=([^;]+)'));
-      const csrfToken = match ? decodeURIComponent(match[2]) : '';
-
-      const res = await fetch('/api/admin/demo-reset', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
-        body: JSON.stringify({ confirm: true }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setResetMessage(data.message || 'Demo environment reset successfully.');
-        fetchHealth();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setResetMessage(`Reset failed: ${err.message || err.error || 'HTTP ' + res.status}`);
-      }
+      const res = await api.resetDemoEnvironment(true);
+      setResetMessage(res.message || 'Demo environment reset successfully.');
+      fetchHealth();
     } catch (e: any) {
       setResetMessage(`Reset error: ${e.message}`);
     } finally {

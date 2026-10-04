@@ -47,7 +47,28 @@ export const AuditLogsViewer = () => {
   const [actionMsg, setActionMsg] = useState('');
 
   useEffect(() => {
-    api.getAnalytics().catch(() => {});
+    api.getAuditLogs()
+      .then((res) => {
+        if (res.success && res.logs && res.logs.length > 0) {
+          const formatted = res.logs.map((l: any) => ({
+            id: l.id,
+            actorRole: l.actorRole || 'SYSTEM',
+            actor: l.actor || { name: 'System Officer' },
+            action: l.action,
+            case: l.caseId || 'SYSTEM_WIDE',
+            outcome: l.outcome || 'RECORDED',
+            createdAt: new Date(l.createdAt).toLocaleString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          }));
+          setLogs(formatted);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const filteredLogs = logs.filter((log) => {

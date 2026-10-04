@@ -6,11 +6,10 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { encryptBuffer, decryptBuffer, getInternalApiKey, zeroBuffer } from '../utils/cryptoUtils.js';
 import { canAccessCase } from '../utils/caseAuthorization.js';
+import { getFastApiBaseUrl } from '../utils/urlUtils.js';
 
 const router = Router();
 const prisma = new PrismaClient();
-
-const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -71,7 +70,8 @@ async function processDocumentAI(
       formData.append('file', blob, originalName);
 
       // 2. Call Python FastAPI /extract with internal key authentication
-      extractRes = await fetch(`${FASTAPI_BASE_URL}/extract`, {
+      const fastapiBase = getFastApiBaseUrl();
+      extractRes = await fetch(`${fastapiBase}/extract`, {
         method: 'POST',
         headers: {
           'X-Internal-API-Key': getInternalApiKey()
@@ -149,7 +149,8 @@ async function processDocumentAI(
       `case_number="${caseNumber}" doc="${originalName}"`
     );
 
-    const ingestRes = await fetch(`${FASTAPI_BASE_URL}/ingest`, {
+    const fastapiBase = getFastApiBaseUrl();
+    const ingestRes = await fetch(`${fastapiBase}/ingest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -503,7 +504,8 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res: Response)
 
     // 1. Purge vectors from ChromaDB via FastAPI endpoint
     try {
-      const purgeRes = await fetch(`${FASTAPI_BASE_URL}/documents/${encodeURIComponent(docId)}`, {
+      const fastapiBase = getFastApiBaseUrl();
+      const purgeRes = await fetch(`${fastapiBase}/documents/${encodeURIComponent(docId)}`, {
         method: 'DELETE',
         headers: {
           'X-Internal-API-Key': getInternalApiKey()

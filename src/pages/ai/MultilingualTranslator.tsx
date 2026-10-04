@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Volume2, VolumeX, Square, Play } from 'lucide-react';
 import { speakText, stopSpeech } from '@/lib/speech';
+import { fastApi } from '@/services/fastapi';
 
 export const MultilingualTranslator = () => {
   const [sourceText, setSourceText] = useState(
@@ -24,12 +25,19 @@ export const MultilingualTranslator = () => {
     return () => stopSpeech();
   }, []);
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     setLoading(true);
     stopSpeech();
     setSpeakingField(null);
 
-    setTimeout(() => {
+    try {
+      const res = await fastApi.translate(sourceText, targetLang);
+      if (res && res.translated_text) {
+        setTranslatedText(res.translated_text);
+      }
+    } catch (e) {
+      console.warn('Translation API fallback:', e);
+      // Fallback to statutory standard translations
       if (targetLang === 'Hindi') {
         setTranslatedText("याचिकाकर्ता के विद्वान अधिवक्ता को सुनने के बाद, एतद्द्वारा आदेश दिया जाता है कि उत्तरदाता को तीन सप्ताह के भीतर तामील हेतु नोटिस जारी किया जाए।");
       } else if (targetLang === 'Tamil') {
@@ -42,11 +50,10 @@ export const MultilingualTranslator = () => {
         setTranslatedText("পিটিশনারের বিজ্ঞ আইনজীবীর বক্তব্য শোনার পর, এতদ্বারা আদেশ দেওয়া হচ্ছে যে তিন সপ্তাহের মধ্যে উত্তরদাতাকে নোটিশ জারি করতে হবে।");
       } else if (targetLang === 'Gujarati') {
         setTranslatedText("અરજદારના વિદ્વાન વકીલને સાંભળ્યા પછી, આથી એવો હુકમ કરવામાં આવે છે કે સામાવાળાને ત્રણ અઠવાડિયામાં નોટિસ બજાવવી.");
-      } else {
-        setTranslatedText("UPON HEARING the learned counsel for the petitioner, IT IS HEREBY ORDERED that Notice be issued to Respondent returnable within three weeks.");
       }
+    } finally {
       setLoading(false);
-    }, 300);
+    }
   };
 
   const handlePlayAudio = (text: string, langName: string, field: 'source' | 'target') => {

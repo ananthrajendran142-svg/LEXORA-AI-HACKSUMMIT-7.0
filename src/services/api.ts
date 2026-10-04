@@ -1,15 +1,39 @@
 // Frontend API Client connected to Node.js / Express Backend
 export function getApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '');
+  // 1. Runtime override via window or localStorage (allows instant frontend redirection without rebuilding)
+  if (typeof window !== 'undefined') {
+    const runtimeUrl = (window as any).__LEXORA_API_URL__ || localStorage.getItem('LEXORA_API_BASE_URL');
+    if (runtimeUrl && typeof runtimeUrl === 'string' && runtimeUrl.trim()) {
+      let u = runtimeUrl.trim().replace(/\/+$/, '');
+      if (!u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/')) {
+        u = `https://${u}`;
+      }
+      return u.endsWith('/api') ? u : `${u}/api`;
+    }
   }
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+
+  // 2. Vite Build-time Environment Variable (VITE_API_BASE_URL)
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    let u = envUrl.trim().replace(/\/+$/, '');
+    if (!u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('/')) {
+      u = (u.includes('localhost') || u.includes('127.0.0.1')) ? `http://${u}` : `https://${u}`;
+    }
+    return u.endsWith('/api') ? u : `${u}/api`;
+  }
+
+  // 3. Browser environment fallback
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api';
+    }
+    // Production default: relative path to the same host
     return '/api';
   }
+
   return 'http://localhost:5000/api';
 }
-
-const API_BASE_URL = getApiBaseUrl();
 
 function getCsrfToken(): string | null {
   if (typeof document === 'undefined') return null;
@@ -40,6 +64,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const method = (options.method || 'GET').toUpperCase();
   const csrfToken = getCsrfToken();
   const token = getAuthToken();
+  const baseUrl = getApiBaseUrl();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -54,21 +79,33 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['X-CSRF-Token'] = csrfToken;
   }
 
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
+
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(url, {
       ...options,
       credentials: 'include', // Include HttpOnly cookies on cross-origin / same-origin requests
       headers,
     });
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${res.status}`);
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `HTTP error! status: ${res.status}`);
+      } else {
+        throw new Error(`HTTP ${res.status} (${res.statusText || 'Error'}): Backend service unreachable or route not found.`);
+      }
     }
 
-    return (await res.json()) as T;
-  } catch (error) {
-    console.warn(`API Error on ${endpoint}:`, error);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return (await res.json()) as T;
+    }
+    return (await res.text()) as unknown as T;
+  } catch (error: any) {
+    console.warn(`[LEXORA API] Error on ${url}:`, error.message || error);
     throw error;
   }
 }
@@ -265,17 +302,27 @@ export const api = {
 
   uploadDocument: async (file: File, caseId?: string) => {
     const token = getAuthToken();
+    const csrfToken = getCsrfToken();
+    const baseUrl = getApiBaseUrl();
     const formData = new FormData();
     formData.append('file', file);
     if (caseId) formData.append('caseId', caseId);
 
-    const res = await fetch(`${API_BASE_URL}/documents/upload`, {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+    const res = await fetch(`${baseUrl}/documents/upload`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+      headers,
       body: formData,
     });
 
-    if (!res.ok) throw new Error('File upload failed');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.error || `File upload failed with status ${res.status}`);
+    }
     return await res.json();
   },
 
@@ -321,5 +368,12 @@ export const api = {
 
   // AI & System Health
   getAiHealth: () => request<{ ok: boolean; detail?: string }>('/system/ai-health'),
+  getSystemHealth: () => request<{ success: boolean; system: any; timestamp: string }>('/system/health'),
+  getBackupStatus: () => request<{ success: boolean; lastBackup: any; backupCount: number; warning: string | null }>('/system/backup-status'),
+  resetDemoEnvironment: (confirm: boolean = true) =>
+    request<{ success: boolean; message: string }>('/admin/demo-reset', {
+      method: 'POST',
+      body: JSON.stringify({ confirm }),
+    }),
 };
 

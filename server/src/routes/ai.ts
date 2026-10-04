@@ -4,10 +4,10 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateToken, optionalAuth, AuthRequest } from '../middleware/auth.js';
 import { getInternalApiKey } from '../utils/cryptoUtils.js';
 import { canAccessCase } from '../utils/caseAuthorization.js';
+import { getFastApiBaseUrl } from '../utils/urlUtils.js';
 
 const router = Router();
 const prisma = new PrismaClient();
-const FASTAPI_BASE_URL = process.env.FASTAPI_BASE_URL || 'http://localhost:8000';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -17,7 +17,8 @@ const upload = multer({
 // Helper for sending JSON requests to FastAPI
 async function proxyToFastApi(endpoint: string, body: any, res: Response) {
   try {
-    const response = await fetch(`${FASTAPI_BASE_URL}${endpoint}`, {
+    const fastapiBase = getFastApiBaseUrl();
+    const response = await fetch(`${fastapiBase}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +57,8 @@ router.post('/extract', optionalAuth, upload.single('file'), async (req: AuthReq
     const formData = new FormData();
     formData.append('file', blob, req.file.originalname);
 
-    const response = await fetch(`${FASTAPI_BASE_URL}/extract`, {
+    const fastapiBase = getFastApiBaseUrl();
+    const response = await fetch(`${fastapiBase}/extract`, {
       method: 'POST',
       headers: {
         'X-Internal-API-Key': getInternalApiKey(),
@@ -265,6 +267,11 @@ router.post('/predict-delay', optionalAuth, async (req: Request, res: Response) 
   } catch (error) {
     return res.status(500).json({ error: 'Delay prediction service failed' });
   }
+});
+
+// POST /api/ai/translate — Multilingual legal translator
+router.post('/translate', optionalAuth, async (req: Request, res: Response) => {
+  return proxyToFastApi('/translate', req.body, res);
 });
 
 export default router;

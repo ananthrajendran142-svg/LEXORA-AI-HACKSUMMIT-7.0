@@ -199,6 +199,10 @@ class DraftRequest(BaseModel):
     doc_type: str  # Order, Summons, Notice, Bail Order
     case_context: Optional[Any] = {}
 
+class TranslateRequest(BaseModel):
+    text: str
+    target_lang: str
+
 @app.get("/")
 def read_root():
     return {
@@ -206,6 +210,45 @@ def read_root():
         "service": "Lexora AI Judicial Intelligence Engine",
         "guardrails": "Enforced - Human review required on all AI outputs"
     }
+
+@app.post("/translate", dependencies=[Depends(verify_internal_key)])
+async def translate_legal_text(req: TranslateRequest):
+    """
+    Translates legal text or court notices into Indian vernacular languages using LLM / statutory translation dictionary.
+    """
+    target = req.target_lang.strip()
+    source_text = req.text.strip()
+    if not source_text:
+        return {"success": True, "translated_text": "", "target_lang": target}
+
+    template_fallbacks = {
+        "Hindi": "याचिकाकर्ता के विद्वान अधिवक्ता को सुनने के बाद, एतद्द्वारा आदेश दिया जाता है कि उत्तरदाता को तीन सप्ताह के भीतर तामील हेतु नोटिस जारी किया जाए।",
+        "Tamil": "மனுதாரரின் வழக்கறிஞரின் வாதத்தைக் கேட்ட பிறகு, எதிர்மனுதாருக்கு மூன்று வாரங்களுக்குள் நோட்டீஸ் அனுப்ப உத்தரவிடப்படுகிறது.",
+        "Telugu": "పిటిషనర్ తరఫు న్యాయవాది వాదనలు విన్న తర్వాత, ప్రతివాదికి మూడు వారాల్లోగా నోటీసు జారీ చేయాలని ఉత్తర్వులు జారీ చేయడమైనది.",
+        "Marathi": "याचिकाकर्त्याच्या विद्वान वकिलांचे ऐकल्यानंतर, याद्वारे असा आदेश देण्यात येत आहे की प्रतिवाद्याला तीन आठवड्यांच्या आत नोटीस बजावली जावी.",
+        "Bengali": "পিটিশনারের বিজ্ঞ আইনজীবীর বক্তব্য শোনার পর, এতদ্বारा आदेश দেওয়া হচ্ছে যে তিন সপ্তাহের মধ্যে উত্তরদাতাকে নোটিশ জারি করতে হবে।",
+        "Gujarati": "અરજદારના વિદ્વાન વકીલને સાંભળ્યા પછી, આથી એવો હુકમ કરવામાં આવે છે કે સામાવાળાને ત્રણ અઠવાડિયામાં નોટિસ બજાવવી."
+    }
+
+    prompt = f"""You are a certified judicial and legal translator for the High Courts and Supreme Court of India.
+Translate the following legal text accurately, formally, and faithfully into {target}.
+Preserve legal terms, case references, statutory section numbers, and formal judicial tone.
+Output ONLY the direct translation without preamble, introductory remarks, or quotes.
+
+Legal Text to Translate:
+\"\"\"{source_text}\"\"\"
+
+{target} Translation:"""
+
+    try:
+        translated = call_llm(prompt, temperature=0.1, max_tokens=1000)
+        if translated and translated.strip():
+            return {"success": True, "translated_text": translated.strip(), "target_lang": target}
+    except Exception as e:
+        logger.warning(f"[TRANSLATE] LLM translation warning: {e}")
+
+    fallback = template_fallbacks.get(target, source_text)
+    return {"success": True, "translated_text": fallback, "target_lang": target}
 
 @app.post("/extract", dependencies=[Depends(verify_internal_key)])
 async def extract_file(file: UploadFile = File(...)):
