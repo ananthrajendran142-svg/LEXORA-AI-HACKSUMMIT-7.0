@@ -92,7 +92,7 @@ export function Sidebar({
         </div>
 
         {/* Navigation Section */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+        <nav id="tour-sidebar-services" className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
           {sections.map((sec) => (
             <div key={sec.name} className="space-y-1">
               {(!collapsed || mobileOpen) && (

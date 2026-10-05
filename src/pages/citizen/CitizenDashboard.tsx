@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { HelpCircle, Search, Globe, CheckSquare, Bot, AlertCircle, ArrowRight, ShieldCheck, FileSearch, Calculator, Sparkles, FileText, Loader2 } from 'lucide-react';
+import { HelpCircle, Search, Globe, CheckSquare, Bot, AlertCircle, ArrowRight, ShieldCheck, FileSearch, Calculator, Sparkles, FileText, Loader2, Compass } from 'lucide-react';
 import { api } from '@/services/api';
 import { fastApi } from '@/services/fastapi';
 import { VoiceMicInput } from '@/components/citizen/VoiceMicInput';
 import { FreeLegalAidModal } from '@/components/citizen/FreeLegalAidModal';
 import { NoticeDeciphererModal } from '@/components/citizen/NoticeDeciphererModal';
 import { CourtFeeCalculatorModal } from '@/components/citizen/CourtFeeCalculatorModal';
+import { CitizenGuidedTour } from '@/components/citizen/CitizenGuidedTour';
 
 const translations: Record<string, Record<string, string>> = {
   English: {
@@ -182,10 +183,11 @@ export const CitizenDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [selectedLang, setSelectedLang] = useState('English');
 
-  // Modals
+  // Modals & Interactive Tour
   const [showLegalAidModal, setShowLegalAidModal] = useState(false);
   const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   const t = translations[selectedLang] || translations.English;
 
@@ -281,33 +283,74 @@ export const CitizenDashboard = () => {
           </p>
         </div>
 
-        {/* Multilingual Selector Pill */}
-        <div className="mt-3 sm:mt-0 flex items-center gap-2 theme-elevated px-3.5 py-2 rounded border border-subtle text-xs shadow-sm">
-          <Globe className="w-4 h-4 text-amber-500" />
-          <span className="font-bold theme-heading">{t.langLabel}:</span>
-          <select
-            value={selectedLang}
-            onChange={(e) => setSelectedLang(e.target.value)}
-            className="font-bold text-xs rounded px-2 py-1 cursor-pointer"
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Interactive Tutorial Launcher Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 border border-[#C9A24B]/50 text-[#C9A24B] text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            title="Launch step-by-step interactive tutorial with directional pointers"
           >
-            <option value="English">English</option>
-            <option value="Hindi">हिंदी (Hindi)</option>
-            <option value="Marathi">मराठी (Marathi)</option>
-            <option value="Tamil">தமிழ் (Tamil)</option>
-            <option value="Bengali">বাংলা (Bengali)</option>
-            <option value="Gujarati">ગુજરાતી (Gujarati)</option>
-            <option value="Telugu">తెలుగు (Telugu)</option>
-          </select>
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+            <span>Interactive Tutorial &amp; Tour</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-[#C9A24B] text-slate-950 font-black rounded-full uppercase tracking-wider">
+              Guide
+            </span>
+          </button>
+
+          {/* Multilingual Selector Pill */}
+          <div
+            id="tour-language-selector"
+            className="flex items-center gap-2 theme-elevated px-3.5 py-2 rounded-lg border border-subtle text-xs shadow-sm"
+          >
+            <Globe className="w-4 h-4 text-amber-500" />
+            <span className="font-bold theme-heading">{t.langLabel}:</span>
+            <select
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+              className="font-bold text-xs rounded px-2 py-1 cursor-pointer bg-transparent"
+            >
+              <option value="English">English</option>
+              <option value="Hindi">हिंदी (Hindi)</option>
+              <option value="Marathi">मराठी (Marathi)</option>
+              <option value="Tamil">தமிழ் (Tamil)</option>
+              <option value="Bengali">বাংলা (Bengali)</option>
+              <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+              <option value="Telugu">తెలుగు (Telugu)</option>
+            </select>
+          </div>
         </div>
+      </div>
+
+      {/* Tutorial Welcome Banner with Pointer Highlight */}
+      <div className="bg-gradient-to-r from-[#C9A24B]/15 via-blue-500/10 to-transparent border border-[#C9A24B]/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-[#C9A24B]/20 text-[#C9A24B] font-bold shrink-0">
+            <Compass className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <p className="font-bold theme-heading text-sm">Need Help Navigating the Citizen Portal?</p>
+            <p className="theme-subtext text-xs mt-0.5">
+              Follow our step-by-step interactive walkthrough featuring directional arrow pointers, feature highlights, and plain-language instructions.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowTour(true)}
+          className="theme-primary-btn px-4 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-2 shrink-0 shadow-sm cursor-pointer"
+        >
+          <span>Start Interactive Tour</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Citizen Power Tools Action Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
+          id="tour-legal-aid"
           onClick={() => setShowLegalAidModal(true)}
-          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer border border-subtle"
         >
-          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded-lg group-hover:scale-105 transition-transform">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
@@ -317,34 +360,36 @@ export const CitizenDashboard = () => {
         </button>
 
         <button
+          id="tour-notice-decipherer"
           onClick={() => setShowNoticeModal(true)}
-          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer border border-subtle"
         >
-          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded-lg group-hover:scale-105 transition-transform">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif font-bold theme-heading text-xs">Notice & Summons Decipherer</h3>
-            <p className="text-[10px] theme-subtext">Plain Language Risk & Action Steps</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Notice &amp; Summons Decipherer</h3>
+            <p className="text-[10px] theme-subtext">Plain Language Risk &amp; Action Steps</p>
           </div>
         </button>
 
         <button
+          id="tour-fee-calculator"
           onClick={() => setShowCalculatorModal(true)}
-          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 text-left transition-all group cursor-pointer"
+          className="p-4 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-3 text-left transition-all group cursor-pointer border border-subtle"
         >
-          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
+          <div className="p-3 theme-elevated text-blue-500 rounded-lg group-hover:scale-105 transition-transform">
             <Calculator className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif font-bold theme-heading text-xs">Court Fee & Stamp Duty Calculator</h3>
+            <h3 className="font-serif font-bold theme-heading text-xs">Court Fee &amp; Stamp Duty Calculator</h3>
             <p className="text-[10px] theme-subtext">Ad-Valorem Filing Charge Calculator</p>
           </div>
         </button>
       </div>
 
       {/* Case Status Quick Lookup */}
-      <div className="theme-card rounded p-6 space-y-4">
+      <div id="tour-case-lookup" className="theme-card rounded-xl p-6 space-y-4 border border-subtle">
         <h2 className="text-base font-serif font-bold theme-heading">{t.caseLookupTitle}</h2>
         <form onSubmit={handleLookupCase} className="flex flex-col sm:flex-row gap-2.5">
           <input
@@ -428,7 +473,7 @@ export const CitizenDashboard = () => {
       </div>
 
       {/* Plain Language AI Assistant with Voice Microphone Input */}
-      <div className="theme-card rounded p-6 space-y-4">
+      <div id="tour-voice-ai" className="theme-card rounded-xl p-6 space-y-4 border border-subtle">
         <div className="flex justify-between items-start flex-wrap gap-2">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
@@ -448,7 +493,7 @@ export const CitizenDashboard = () => {
             placeholder={t.askPlaceholder}
             value={plainQuestion}
             onChange={(e) => setPlainQuestion(e.target.value)}
-            className="w-full p-3.5 text-xs rounded leading-relaxed"
+            className="w-full p-3.5 text-xs rounded-xl leading-relaxed"
           />
           <button
             type="submit"
@@ -471,10 +516,17 @@ export const CitizenDashboard = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Modals & Interactive Tour Overlay */}
       <FreeLegalAidModal isOpen={showLegalAidModal} onClose={() => setShowLegalAidModal(false)} />
       <NoticeDeciphererModal isOpen={showNoticeModal} onClose={() => setShowNoticeModal(false)} />
       <CourtFeeCalculatorModal isOpen={showCalculatorModal} onClose={() => setShowCalculatorModal(false)} />
+      
+      {/* Full-Screen Interactive Guided Tour with Arrow Pointers & Callout Tooltips */}
+      <CitizenGuidedTour
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+        onComplete={() => setShowTour(false)}
+      />
     </div>
   );
 };
