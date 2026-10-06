@@ -454,8 +454,11 @@ def enrich_case_details(case_dict: Dict[str, Any], query_text: str = "") -> Dict
         out["year"] = matched_entry["major_details"]["year"]
         out["act"] = matched_entry["major_details"]["act"]
         out["section"] = matched_entry["major_details"]["section"]
-        out["ratio_decidendi"] = matched_entry["important_details"]["ratio_decidendi"]
-        out["evidence_points"] = matched_entry["important_details"]["evidence_points"]
+        out["ratio_decidendi"] = matched_entry["important_details"].get("ratio_decidendi", "")
+        evidence_val = matched_entry["important_details"].get("evidentiary_standard") or matched_entry["important_details"].get("evidence_points", "")
+        out["evidence_points"] = evidence_val
+        matched_entry["important_details"]["evidence_points"] = evidence_val
+        matched_entry["important_details"]["evidentiary_standard"] = evidence_val
         out["final_judgment_highlight"] = matched_entry["final_judgment"]
         return out
 
