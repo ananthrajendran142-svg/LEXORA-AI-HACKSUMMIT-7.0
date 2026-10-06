@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Clock, CheckCircle, Timer, Users, Building, ShieldCheck, UserCheck, XCircle, AlertTriangle, Lock, ShieldAlert, Cpu, Database, Activity, Download, RefreshCw, FileSpreadsheet, Edit3, Plus, X, BarChart3, Globe, Eye, EyeOff, FileText, AlertCircle, Mail, User } from 'lucide-react';
+import { 
+  Briefcase, Clock, CheckCircle, Timer, Users, Building, ShieldCheck, 
+  UserCheck, XCircle, AlertTriangle, Lock, ShieldAlert, Cpu, Database, 
+  Activity, Download, RefreshCw, FileSpreadsheet, Edit3, Plus, X, 
+  BarChart3, Globe, Eye, EyeOff, FileText, AlertCircle, Mail, User, Compass, Sparkles
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/services/api';
+import { RoleGuidedTour } from '@/components/common/RoleGuidedTour';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState<boolean>(false);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
   // Verification Modal State
   const [selectedApplicant, setSelectedApplicant] = useState<any | null>(null);
@@ -171,18 +178,31 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Page Header */}
-      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div id="tour-admin-header" className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-amber-500" />
-            National Administrator & System Governance Portal
+            National Administrator &amp; System Governance Portal
           </h1>
           <p className="theme-subtext text-xs sm:text-sm mt-1">
-            {user?.court || 'National Judicial Data Grid'} — Executive Access & AI Governance Center
+            {user?.court || 'National Judicial Data Grid'} — Executive Access &amp; AI Governance Center
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Interactive Tutorial Launcher Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 border border-[#C9A24B]/50 text-[#C9A24B] text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            title="Launch step-by-step administrator interactive tutorial"
+          >
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+            <span>Interactive Tutorial &amp; Tour</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-[#C9A24B] text-slate-950 font-black rounded-full uppercase tracking-wider">
+              Guide
+            </span>
+          </button>
+
           <Link
             to="/admin/njdg"
             className="theme-secondary-btn px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
@@ -210,7 +230,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
       )}
 
       {/* Emergency Security Lockdown Control */}
-      <div className={`p-6 rounded border transition-all space-y-4 ${
+      <div id="tour-admin-security-ops" className={`p-6 rounded border transition-all space-y-4 ${
         lockdownActive
           ? 'theme-elevated border-red-500/60'
           : 'theme-card'
@@ -219,9 +239,9 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
               <ShieldAlert className={`w-5 h-5 ${lockdownActive ? 'text-red-500 animate-pulse' : 'text-amber-500'}`} />
-              System Security & Emergency Judicial Lockdown Control
+              System Security &amp; Emergency Judicial Lockdown Control
             </h2>
-            <p className="text-xs theme-subtext mt-0.5">Live session security monitoring & instant 1-click cyber-threat protection</p>
+            <p className="text-xs theme-subtext mt-0.5">Live session security monitoring &amp; instant 1-click cyber-threat protection</p>
           </div>
 
           <button
@@ -254,7 +274,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
           <div className="p-3 theme-elevated border border-subtle rounded space-y-1">
             <span className="theme-subtext font-bold uppercase text-[10px]">Security Barrier Status</span>
             <p className="text-lg font-bold text-amber-500 font-serif">{lockdownActive ? 'LOCKED DOWN' : 'ACTIVE GATE'}</p>
-            <span className="theme-subtext text-[10px]">CAPTCHA & Hash Verification Enforced</span>
+            <span className="theme-subtext text-[10px]">CAPTCHA &amp; Hash Verification Enforced</span>
           </div>
 
           <div className="p-3 theme-elevated border border-subtle rounded space-y-1">
@@ -266,7 +286,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
       </div>
 
       {/* Official Registration Approval Queue */}
-      <div className="theme-card rounded p-6 space-y-4">
+      <div id="tour-admin-verification-queue" className="theme-card rounded p-6 space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-subtle pb-3">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
@@ -339,7 +359,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
                     className="theme-secondary-btn px-3 py-2 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
                   >
                     <FileText className="w-3.5 h-3.5 text-amber-500" />
-                    Review & Verify
+                    Review &amp; Verify
                   </button>
                   <button
                     onClick={() => handleApprove(u.id, 'APPROVED')}
@@ -370,12 +390,12 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
       </div>
 
       {/* ChromaDB Vector DB & AI Engine Health Monitor */}
-      <div className="theme-card rounded p-6 space-y-4">
+      <div id="tour-admin-system-health" className="theme-card rounded p-6 space-y-4">
         <div className="flex justify-between items-center border-b border-subtle pb-3">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
               <Cpu className="w-5 h-5 text-amber-500" />
-              ChromaDB Vector DB & AI Engine Health Monitor
+              ChromaDB Vector DB &amp; AI Engine Health Monitor
             </h2>
             <p className="text-xs theme-subtext">Real-time vector embedding precision, LLM latency, and statutory citation status</p>
           </div>
@@ -415,7 +435,7 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
               <span>Avg LLM Latency</span>
             </div>
             <p className="text-xl font-extrabold font-mono theme-heading pt-1">320 ms</p>
-            <p className="text-[10px] theme-subtext">gpt-4o-mini & Gemini 1.5 Flash</p>
+            <p className="text-[10px] theme-subtext">gpt-4o-mini &amp; Gemini 1.5 Flash</p>
           </div>
 
           <div className="p-4 theme-elevated border border-subtle rounded space-y-1">
@@ -430,12 +450,12 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
       </div>
 
       {/* Judicial Bench & Courtroom Allocation Manager */}
-      <div className="theme-card rounded overflow-hidden">
+      <div id="tour-admin-bench-allocation" className="theme-card rounded overflow-hidden">
         <div className="p-4 border-b border-subtle flex justify-between items-center theme-elevated">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
               <Building className="w-5 h-5 text-amber-500" />
-              Judicial Bench & Courtroom Allocation Manager
+              Judicial Bench &amp; Courtroom Allocation Manager
             </h2>
             <p className="text-xs theme-subtext">Manage national courtroom allocations and judicial bench assignments</p>
           </div>
@@ -805,6 +825,42 @@ Verified for Supreme Court of India e-Committee Archival Compliance.`;
           </div>
         </div>
       )}
+
+      {/* Admin Quick Governance Toolbar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        <Link
+          id="tour-admin-analytics"
+          to="/admin/analytics"
+          className="theme-card p-4 rounded-xl border border-subtle hover:border-amber-500/50 flex items-center justify-between group transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase">Judicial Intelligence</span>
+            <h4 className="text-xs font-bold theme-heading group-hover:text-amber-500 transition-colors">National Judicial Statistics</h4>
+            <p className="text-[11px] theme-subtext">Clearance rates, pendency trends &amp; disposal times</p>
+          </div>
+          <BarChart3 className="w-6 h-6 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+        </Link>
+
+        <Link
+          id="tour-admin-audit-logs"
+          to="/admin/audit-logs"
+          className="theme-card p-4 rounded-xl border border-subtle hover:border-blue-500/50 flex items-center justify-between group transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">Security &amp; Archival</span>
+            <h4 className="text-xs font-bold theme-heading group-hover:text-blue-500 transition-colors">Immutable Audit Trail Viewer</h4>
+            <p className="text-[11px] theme-subtext">Cryptographic logs, user actions &amp; backup status</p>
+          </div>
+          <ShieldAlert className="w-6 h-6 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+        </Link>
+      </div>
+
+      {/* Interactive Role Guided Tour */}
+      <RoleGuidedTour
+        role="ADMIN"
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+      />
     </div>
   );
 };

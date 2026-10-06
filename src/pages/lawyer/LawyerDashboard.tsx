@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api } from '@/services/api';
-import { Briefcase, Clock, Calendar, FileText, Search, FolderOpen, ArrowRight, AlertTriangle, RefreshCw, Filter } from 'lucide-react';
+import { 
+  Briefcase, Clock, Calendar, FileText, Search, FolderOpen, 
+  ArrowRight, AlertTriangle, RefreshCw, Filter, Compass, Sparkles, Scale
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { RoleGuidedTour } from '@/components/common/RoleGuidedTour';
 
 export const LawyerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -13,6 +17,7 @@ export const LawyerDashboard: React.FC = () => {
   const [hearings, setHearings] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -57,21 +62,35 @@ export const LawyerDashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div id="tour-lawyer-header" className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
             <Briefcase className="w-6 h-6 text-amber-500" />
-            Advocate & Legal Counsel Portal
+            Advocate &amp; Legal Counsel Portal
           </h1>
           <p className="theme-subtext text-xs sm:text-sm mt-1">
             Welcome back, <span className="font-bold theme-heading">{user?.name || 'Authorized Legal Counsel'}</span> | High Court Bar Association
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Interactive Tutorial Launcher Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 border border-[#C9A24B]/50 text-[#C9A24B] text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            title="Launch step-by-step advocate interactive tutorial"
+          >
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+            <span>Interactive Tutorial &amp; Tour</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-[#C9A24B] text-slate-950 font-black rounded-full uppercase tracking-wider">
+              Guide
+            </span>
+          </button>
+
           <Link
+            id="tour-lawyer-draft-btn"
             to="/ai/drafts"
-            className="theme-primary-btn px-4 py-2.5 font-bold text-xs rounded shadow-sm flex items-center gap-1.5 cursor-pointer"
+            className="theme-primary-btn px-4 py-2 font-bold text-xs rounded shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>Draft Pleading Motion</span>
@@ -97,7 +116,7 @@ export const LawyerDashboard: React.FC = () => {
       )}
 
       {/* Dynamic Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div id="tour-lawyer-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div 
           onClick={() => setStatusFilter('All')}
           className={`theme-card p-5 rounded space-y-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${statusFilter === 'All' ? 'border-[var(--primary-accent)] ring-2 ring-[var(--primary-accent)]/20' : 'hover:border-blue-500'}`}
@@ -136,7 +155,7 @@ export const LawyerDashboard: React.FC = () => {
       </div>
 
       {/* Quick Tools Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div id="tour-lawyer-ai-tools" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={() => navigate('/ai/drafts')}
           className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
@@ -146,20 +165,20 @@ export const LawyerDashboard: React.FC = () => {
           </div>
           <div className="text-left">
             <h3 className="font-serif font-bold theme-heading text-xs">File Pleading Motion</h3>
-            <p className="text-[10px] theme-subtext">AI Draft Generator & Petitions</p>
+            <p className="text-[10px] theme-subtext">AI Draft Generator &amp; Petitions</p>
           </div>
         </button>
 
         <button
-          onClick={() => navigate('/ai/research')}
+          onClick={() => navigate('/ai/similar-cases')}
           className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
         >
-          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
-            <Search className="w-6 h-6" />
+          <div className="p-3 theme-elevated text-amber-500 rounded group-hover:scale-105 transition-transform">
+            <Scale className="w-6 h-6" />
           </div>
           <div className="text-left">
-            <h3 className="font-serif font-bold theme-heading text-xs">Case Law Research</h3>
-            <p className="text-[10px] theme-subtext">Precedent Vector Search Engine</p>
+            <h3 className="font-serif font-bold theme-heading text-xs">Similar Case &amp; Precedent Finder</h3>
+            <p className="text-[10px] theme-subtext">Landmark Judgments, Facts &amp; Ratios</p>
           </div>
         </button>
 
@@ -167,12 +186,12 @@ export const LawyerDashboard: React.FC = () => {
           onClick={() => navigate('/workspace')}
           className="p-5 theme-card hover:bg-slate-100 dark:hover:bg-slate-800 rounded flex items-center gap-3 transition-all cursor-pointer group"
         >
-          <div className="p-3 theme-elevated text-blue-500 rounded group-hover:scale-105 transition-transform">
+          <div className="p-3 theme-elevated text-emerald-500 rounded group-hover:scale-105 transition-transform">
             <FolderOpen className="w-6 h-6" />
           </div>
           <div className="text-left">
             <h3 className="font-serif font-bold theme-heading text-xs">Unified Case Workspace</h3>
-            <p className="text-[10px] theme-subtext">Inspect Docket Briefs & Evidence</p>
+            <p className="text-[10px] theme-subtext">Inspect Docket Briefs &amp; Evidence</p>
           </div>
         </button>
       </div>
@@ -180,7 +199,7 @@ export const LawyerDashboard: React.FC = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Cases Table */}
-        <div className="lg:col-span-8 theme-card rounded overflow-hidden space-y-3">
+        <div id="tour-lawyer-cases" className="lg:col-span-8 theme-card rounded overflow-hidden space-y-3">
           <div className="p-4 border-b border-subtle theme-elevated flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h2 className="text-base font-serif font-bold theme-heading">My Authorized Client Briefs</h2>
@@ -188,7 +207,7 @@ export const LawyerDashboard: React.FC = () => {
             </div>
 
             {/* Filter & Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <form id="tour-lawyer-search" onSubmit={handleSearchSubmit} className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-initial">
                 <Search className="w-3.5 h-3.5 theme-subtext absolute left-2.5 top-2.5" />
                 <input
@@ -261,7 +280,7 @@ export const LawyerDashboard: React.FC = () => {
         </div>
 
         {/* Upcoming Hearings Sidebar Card */}
-        <div className="lg:col-span-4 theme-card rounded p-5 space-y-4">
+        <div id="tour-lawyer-hearings" className="lg:col-span-4 theme-card rounded p-5 space-y-4">
           <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2 border-b border-subtle pb-3">
             <Clock className="w-4 h-4 text-amber-500" />
             Upcoming Cause List Hearings
@@ -297,6 +316,13 @@ export const LawyerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Interactive Role Guided Tour */}
+      <RoleGuidedTour
+        role="LAWYER"
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+      />
     </div>
   );
 };

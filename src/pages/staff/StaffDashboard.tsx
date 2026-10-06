@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, CalendarPlus, FileCode, FolderKanban, CheckCircle, ShieldCheck, Building, Send, UserCheck, Plus, X, FolderOpen, Scale, Loader2 } from 'lucide-react';
+import { 
+  Building2, CalendarPlus, FileCode, FolderKanban, CheckCircle, 
+  ShieldCheck, Building, Send, UserCheck, Plus, X, FolderOpen, 
+  Scale, Loader2, Compass, Sparkles, FileText, Calculator
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
+import { RoleGuidedTour } from '@/components/common/RoleGuidedTour';
 
 interface FilingRecord {
   id: string;
@@ -19,6 +24,7 @@ interface FilingRecord {
 export const StaffDashboard = () => {
   const [filings, setFilings] = useState<FilingRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
   // Live stat metrics from DB
   const [stats, setStats] = useState({
@@ -92,14 +98,31 @@ export const StaffDashboard = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-subtle pb-4">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
-          <Building className="w-6 h-6 text-amber-500" />
-          Court Staff & Registry Officer Portal
-        </h1>
-        <p className="theme-subtext text-xs sm:text-sm mt-1">
-          Bench Registrar & Registry Desk — Active Filing Verification, Docket Management & Summons Dispatch
-        </p>
+      <div id="tour-staff-header" className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
+            <Building className="w-6 h-6 text-amber-500" />
+            Court Staff &amp; Registry Officer Portal
+          </h1>
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
+            Bench Registrar &amp; Registry Desk — Active Filing Verification, Docket Management &amp; Summons Dispatch
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Interactive Tutorial Launcher Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 border border-[#C9A24B]/50 text-[#C9A24B] text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            title="Launch step-by-step registry interactive tutorial"
+          >
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+            <span>Interactive Tutorial &amp; Tour</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-[#C9A24B] text-slate-950 font-black rounded-full uppercase tracking-wider">
+              Guide
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Action Notification */}
@@ -111,7 +134,7 @@ export const StaffDashboard = () => {
       )}
 
       {/* Top Stat Cards (Connected Live to Database) */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div id="tour-staff-stats" className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="theme-card p-5 rounded space-y-1">
           <p className="text-xs theme-subtext font-semibold uppercase">Pending e-Filings Queue</p>
           <h3 className="text-2xl font-bold font-serif text-amber-500 mt-1">
@@ -137,7 +160,7 @@ export const StaffDashboard = () => {
         </div>
 
         <div className="theme-card p-5 rounded space-y-1">
-          <p className="text-xs theme-subtext font-semibold uppercase">Draft Notices & Orders</p>
+          <p className="text-xs theme-subtext font-semibold uppercase">Draft Notices &amp; Orders</p>
           <h3 className="text-2xl font-bold font-serif text-purple-600 dark:text-purple-400 mt-1">
             {loading ? '...' : `${stats.draftNotices} Saved Drafts`}
           </h3>
@@ -146,12 +169,12 @@ export const StaffDashboard = () => {
       </div>
 
       {/* Incoming e-Filing Verification Queue Table */}
-      <div className="theme-card rounded overflow-hidden">
+      <div id="tour-staff-filings-queue" className="theme-card rounded overflow-hidden">
         <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
           <div>
             <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
               <FolderOpen className="w-5 h-5 text-amber-500" />
-              Incoming Electronic Case Filing Queue (Citizen & Advocate e-Filings)
+              Incoming Electronic Case Filing Queue (Citizen &amp; Advocate e-Filings)
             </h2>
             <p className="text-xs theme-subtext">Verify petitioner documents and update registry status</p>
           </div>
@@ -174,7 +197,7 @@ export const StaffDashboard = () => {
                 <tr>
                   <th className="px-4 py-3">Filing Reference</th>
                   <th className="px-4 py-3">Petitioner vs Respondent</th>
-                  <th className="px-4 py-3">Suit Category & Court</th>
+                  <th className="px-4 py-3">Suit Category &amp; Court</th>
                   <th className="px-4 py-3">Filing Status</th>
                   <th className="px-4 py-3">Date Submitted</th>
                   <th className="px-4 py-3">Action</th>
@@ -227,11 +250,11 @@ export const StaffDashboard = () => {
       </div>
 
       {/* Feature Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="theme-card rounded p-6 space-y-4">
+      <div id="tour-staff-quick-actions" className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div id="tour-staff-cause-list-btn" className="theme-card rounded p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-subtle pb-3">
             <CalendarPlus className="w-5 h-5 text-amber-500" />
-            <h2 className="font-serif font-bold theme-heading text-base">Judicial Bench & Courtroom Allocations</h2>
+            <h2 className="font-serif font-bold theme-heading text-base">Judicial Bench &amp; Courtroom Allocations</h2>
           </div>
           <p className="text-xs theme-subtext leading-relaxed">
             Allocate courtrooms, listing queues, and sync hearing dates with presiding bench schedules.
@@ -245,20 +268,20 @@ export const StaffDashboard = () => {
           </Link>
         </div>
 
-        <div className="theme-card rounded p-6 space-y-4">
+        <div id="tour-staff-summons-btn" className="theme-card rounded p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-subtle pb-3">
             <FileCode className="w-5 h-5 text-amber-500" />
-            <h2 className="font-serif font-bold theme-heading text-base">Official Summons & Real Legal Notices</h2>
+            <h2 className="font-serif font-bold theme-heading text-base">Official Summons &amp; Real Legal Notices</h2>
           </div>
           <p className="text-xs theme-subtext leading-relaxed">
-            Generate authentic High Court & District Court Summons under Order V CPC, Section 41A CrPC, and Section 138 NI Act with Process Server coupons.
+            Generate authentic High Court &amp; District Court Summons under Order V CPC, Section 41A CrPC, and Section 138 NI Act with Process Server coupons.
           </p>
           <Link
             to="/staff/notices"
             className="theme-primary-btn inline-flex items-center gap-2 px-5 py-2.5 text-xs cursor-pointer"
           >
             <Send className="w-4 h-4" />
-            <span>Open Real Summons & Notice Generator</span>
+            <span>Open Real Summons &amp; Notice Generator</span>
           </Link>
         </div>
       </div>
@@ -292,7 +315,7 @@ export const StaffDashboard = () => {
                   className="w-full px-3.5 py-2.5 font-bold cursor-pointer rounded"
                 >
                   <option value="UNDER_REVIEW">UNDER_REVIEW — Scrutiny in Progress</option>
-                  <option value="ACCEPTED">ACCEPTED — Validated & Docketed</option>
+                  <option value="ACCEPTED">ACCEPTED — Validated &amp; Docketed</option>
                   <option value="REJECTED">REJECTED — Defects Identified</option>
                 </select>
               </div>
@@ -307,6 +330,13 @@ export const StaffDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Interactive Role Guided Tour */}
+      <RoleGuidedTour
+        role="STAFF"
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+      />
     </div>
   );
 };

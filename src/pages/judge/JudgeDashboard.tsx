@@ -3,11 +3,12 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   Clock, Calendar, AlertTriangle, FileText, CheckCircle, XCircle, Scale, 
   ChevronRight, Eye, RefreshCw, X, Search, ChevronDown, ChevronUp, Sparkles, 
-  FolderOpen, ArrowRight, ShieldCheck, User, Building
+  FolderOpen, ArrowRight, ShieldCheck, User, Building, Compass, BookOpen
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { api } from '@/services/api';
+import { RoleGuidedTour } from '@/components/common/RoleGuidedTour';
 
 type CategoryType = 'today_hearings' | 'pending_reviews' | 'active_dockets' | 'high_priority';
 
@@ -24,6 +25,7 @@ export const JudgeDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [modalSearchQuery, setModalSearchQuery] = useState<string>('');
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -161,7 +163,7 @@ export const JudgeDashboard = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Editorial Header */}
-      <div className="border-b border-[#D9DEE4] dark:border-[#2B3742] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div id="tour-judge-header" className="border-b border-[#D9DEE4] dark:border-[#2B3742] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[var(--primary-accent)]">
             HIGH COURT OF JUDICATURE · BENCH II
@@ -174,23 +176,36 @@ export const JudgeDashboard = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Interactive Tutorial Launcher Button */}
+          <button
+            onClick={() => setShowTour(true)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#C9A24B]/15 hover:bg-[#C9A24B]/25 border border-[#C9A24B]/50 text-[#C9A24B] text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            title="Launch step-by-step judicial interactive tutorial"
+          >
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+            <span>Interactive Tutorial &amp; Tour</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-[#C9A24B] text-slate-950 font-black rounded-full uppercase tracking-wider">
+              Guide
+            </span>
+          </button>
+
           <button
             onClick={fetchDashboardData}
             title="Refresh Live Data"
-            className="p-1.5 theme-elevated border border-subtle rounded-sm text-xs theme-subtext hover:theme-heading cursor-pointer flex items-center gap-1"
+            className="p-1.5 theme-elevated border border-subtle rounded text-xs theme-subtext hover:theme-heading cursor-pointer flex items-center gap-1"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <Link to="/ai/research" className="px-3.5 py-1.5 theme-primary-btn text-xs rounded-sm font-semibold flex items-center gap-1.5 cursor-pointer">
+          <Link to="/ai/research" className="px-3.5 py-1.5 theme-primary-btn text-xs rounded font-semibold flex items-center gap-1.5 cursor-pointer">
             <Scale className="w-3.5 h-3.5" />
-            <span>Open Legal Research Workstation</span>
+            <span>Legal Research</span>
           </Link>
         </div>
       </div>
 
       {/* Today's Operational Summary - Prominent Clickable Stats Cards */}
-      <div className="space-y-3">
+      <div id="tour-judge-stats" className="space-y-3">
         <div className="flex justify-between items-center px-0.5">
           <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--primary-accent)]">
             TODAY'S OPERATIONAL SUMMARY — CLICK ANY NUMBER TO VIEW CASE DETAILS
@@ -612,7 +627,7 @@ export const JudgeDashboard = () => {
       )}
 
       {/* Matters Requiring Attention Table */}
-      <div className="theme-card overflow-hidden space-y-0">
+      <div id="tour-judge-urgent-matters" className="theme-card overflow-hidden space-y-0">
         <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
           <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -686,7 +701,7 @@ export const JudgeDashboard = () => {
       </div>
 
       {/* Today's Cause List (Upcoming Hearings) - Full Width Section */}
-      <div className="theme-card overflow-hidden">
+      <div id="tour-judge-cause-list" className="theme-card overflow-hidden">
         <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -770,6 +785,55 @@ export const JudgeDashboard = () => {
           </table>
         </div>
       </div>
+
+      {/* AI Judicial Intelligence Tools Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <Link
+          id="tour-judge-ai-precedents"
+          to="/ai/similar-cases"
+          className="theme-card p-4 rounded-xl border border-subtle hover:border-blue-500/50 flex items-center justify-between group transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 uppercase">Precedent Search</span>
+            <h4 className="text-xs font-bold theme-heading group-hover:text-blue-500 transition-colors">Similar Case Finder</h4>
+            <p className="text-[11px] theme-subtext">Vector search with final judgments &amp; ratio</p>
+          </div>
+          <Scale className="w-6 h-6 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
+        </Link>
+
+        <Link
+          id="tour-judge-summarizer"
+          to="/ai/summarizer"
+          className="theme-card p-4 rounded-xl border border-subtle hover:border-amber-500/50 flex items-center justify-between group transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase">Automated Briefs</span>
+            <h4 className="text-xs font-bold theme-heading group-hover:text-amber-500 transition-colors">Case Summarizer</h4>
+            <p className="text-[11px] theme-subtext">Instant multi-page judicial briefs</p>
+          </div>
+          <Sparkles className="w-6 h-6 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
+        </Link>
+
+        <Link
+          id="tour-judge-case-dossier"
+          to="/judge/cases"
+          className="theme-card p-4 rounded-xl border border-subtle hover:border-emerald-500/50 flex items-center justify-between group transition-all"
+        >
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">Digital Vault</span>
+            <h4 className="text-xs font-bold theme-heading group-hover:text-emerald-500 transition-colors">Complete Dockets</h4>
+            <p className="text-[11px] theme-subtext">Exhibits, daily orders &amp; evidence</p>
+          </div>
+          <FolderOpen className="w-6 h-6 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
+        </Link>
+      </div>
+
+      {/* Interactive Role Guided Tour */}
+      <RoleGuidedTour
+        role="JUDGE"
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+      />
     </div>
   );
 };
