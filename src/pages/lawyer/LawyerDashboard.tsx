@@ -98,28 +98,40 @@ export const LawyerDashboard: React.FC = () => {
 
       {/* Dynamic Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="theme-card p-5 rounded space-y-1">
+        <div 
+          onClick={() => setStatusFilter('All')}
+          className={`theme-card p-5 rounded space-y-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${statusFilter === 'All' ? 'border-[var(--primary-accent)] ring-2 ring-[var(--primary-accent)]/20' : 'hover:border-blue-500'}`}
+        >
           <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Total Assigned Briefs</p>
           <h2 className="text-2xl font-bold font-mono text-blue-500">{totalCasesCount} Cases</h2>
-          <p className="text-[11px] theme-subtext">Live Database Records</p>
+          <p className="text-[11px] theme-subtext">Live Database Records · <span className="font-semibold text-blue-500">Filter All →</span></p>
         </div>
 
-        <div className="theme-card p-5 rounded space-y-1">
+        <div 
+          onClick={() => setStatusFilter('Pending')}
+          className={`theme-card p-5 rounded space-y-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${statusFilter === 'Pending' ? 'border-amber-500 ring-2 ring-amber-500/20' : 'hover:border-amber-500'}`}
+        >
           <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Active / Pending Matters</p>
           <h2 className="text-2xl font-bold font-mono text-amber-500">{pendingCasesCount} Matters</h2>
-          <p className="text-[11px] theme-subtext">Awaiting Hearing / Counter Affidavit</p>
+          <p className="text-[11px] theme-subtext">Awaiting Hearing · <span className="font-semibold text-amber-500">Filter Pending →</span></p>
         </div>
 
-        <div className="theme-card p-5 rounded space-y-1">
+        <div 
+          onClick={() => setStatusFilter('Closed')}
+          className={`theme-card p-5 rounded space-y-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md ${statusFilter === 'Closed' ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'hover:border-emerald-500'}`}
+        >
           <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Disposed Decrees</p>
           <h2 className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{closedCasesCount} Decrees</h2>
-          <p className="text-[11px] theme-subtext">✓ Resolved / Closed Filings</p>
+          <p className="text-[11px] theme-subtext">✓ Resolved · <span className="font-semibold text-emerald-600 dark:text-emerald-400">Filter Disposed →</span></p>
         </div>
 
-        <div className="theme-card p-5 rounded space-y-1">
+        <div 
+          onClick={() => navigate('/citizen/causelists')}
+          className="theme-card p-5 rounded space-y-1 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-md hover:border-cyan-500"
+        >
           <p className="text-[10px] theme-subtext font-bold uppercase tracking-wider">Cause List Hearings</p>
           <h2 className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">{activeHearingsCount} Hearings</h2>
-          <p className="text-[11px] theme-subtext">Scheduled Calendar Entries</p>
+          <p className="text-[11px] theme-subtext">Scheduled Calendar · <span className="font-semibold text-cyan-600 dark:text-cyan-400">View Schedule →</span></p>
         </div>
       </div>
 
