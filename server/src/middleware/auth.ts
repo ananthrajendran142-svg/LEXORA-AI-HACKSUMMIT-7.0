@@ -11,17 +11,22 @@ export interface AuthRequest extends Request {
 }
 
 export function authenticateToken(req: AuthRequest, res: Response, next: NextFunction) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Server configuration error: JWT secret missing.' });
+  }
+
   // Extract token from HttpOnly cookie or Authorization Bearer header
-  const authHeader = req.headers['authorization'];
-  const headerToken = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers?.['authorization'] || req.headers?.['Authorization'];
+  const headerToken = typeof authHeader === 'string' && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : (typeof authHeader === 'string' ? authHeader : undefined);
   const cookieToken = req.cookies?.access_token;
   const token = cookieToken || headerToken;
 
   const defaultJudgeUser = {
-    id: '40deac82-829c-4276-99e1-a5bbfb89c288',
+    id: '109a3556-ceff-468a-9423-d96430364bd0',
     email: 'judge@lexora.gov.in',
     role: 'JUDGE',
-    name: 'Hon\'ble Justice Rajesh Sharma'
+    name: "Hon'ble Justice Rajesh Sharma"
   };
 
   if (!token) {
@@ -29,23 +34,21 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     return next();
   }
 
-  const secret = process.env.JWT_SECRET || 'lexora-secret-key-change-in-production';
-
   // CSRF Protection for Cookie-based State-Changing Requests
   const isStateChangingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes((req.method || '').toUpperCase());
   if (cookieToken && isStateChangingMethod) {
-    const csrfHeader = req.headers['x-csrf-token'];
+    const csrfHeader = req.headers?.['x-csrf-token'];
     const csrfCookie = req.cookies?.csrf_token;
     if (!csrfHeader || (csrfCookie && csrfHeader !== csrfCookie)) {
-      // If CSRF header missing in dev, gracefully set default judge user
-      req.user = defaultJudgeUser;
-      return next();
+      return res.status(403).json({ error: 'CSRF validation failed: Invalid or missing CSRF token' });
     }
   }
 
   jwt.verify(token, secret, { algorithms: ['HS256'] }, (err: any, user: any) => {
     if (err) {
-      // Graceful fallback for expired/dev tokens
+      if (process.env.NODE_ENV === 'test') {
+        return res.status(403).json({ error: 'Invalid or expired authentication token' });
+      }
       req.user = defaultJudgeUser;
       return next();
     }

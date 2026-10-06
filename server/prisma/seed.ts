@@ -271,8 +271,10 @@ async function main() {
 
   // 3. SEED INTERCONNECTED CASES
   console.log('--- Step 2: Seeding Cases ---');
-  const todayIso = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const todayIso = now.toISOString().split('T')[0];
   const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const plus3DaysIso = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
   const plus5DaysIso = new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0];
   const plus8DaysIso = new Date(Date.now() + 8 * 86400000).toISOString().split('T')[0];
   const plus12DaysIso = new Date(Date.now() + 12 * 86400000).toISOString().split('T')[0];
@@ -349,7 +351,7 @@ async function main() {
       petitioner: 'Sunrise Housing Cooperative (Ramesh Patel)',
       respondent: 'Municipal Authority & Town Planning Directorate',
       filingDate: '2025-01-20',
-      nextHearing: plus5DaysIso,
+      nextHearing: todayIso,
       court: 'District Civil Court',
       type: 'Civil Suit',
       delayProbability: 35.0,
@@ -369,7 +371,7 @@ async function main() {
       petitioner: 'State of Maharashtra',
       respondent: 'Arvind Kumar',
       filingDate: '2024-11-04',
-      nextHearing: plus8DaysIso,
+      nextHearing: todayIso,
       court: 'High Court of Judicature',
       type: 'Criminal Appeal',
       delayProbability: 58.0,
@@ -389,7 +391,7 @@ async function main() {
       petitioner: 'Kavya Enterprises',
       respondent: 'Delta Logistics Pvt. Ltd.',
       filingDate: '2025-06-18',
-      nextHearing: plus12DaysIso,
+      nextHearing: plus5DaysIso,
       court: 'High Court of Judicature',
       type: 'Commercial Suit',
       delayProbability: 19.5,
@@ -409,7 +411,7 @@ async function main() {
       petitioner: 'National Highways Authority',
       respondent: 'ABC Infra Projects Ltd.',
       filingDate: '2024-11-20',
-      nextHearing: plus15DaysIso,
+      nextHearing: plus8DaysIso,
       court: 'High Court of Judicature',
       type: 'Arbitration Appeal',
       delayProbability: 42.0,
@@ -444,7 +446,7 @@ async function main() {
   console.log('--- Step 3: Seeding Hearings ---');
   await prisma.hearing.createMany({
     data: [
-      // 2 Today's Hearings
+      // 4 Today's Hearings across morning and afternoon sessions
       {
         caseId: case1.id,
         date: todayIso,
@@ -459,9 +461,27 @@ async function main() {
         caseId: case2.id,
         date: todayIso,
         time: '11:00 AM',
-        courtRoom: 'Courtroom No. 2',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
         status: 'Scheduled',
         type: 'Preliminary Hearing & Framing of Issues',
+        suggestedByAi: false,
+      },
+      {
+        caseId: case4.id,
+        date: todayIso,
+        time: '02:30 PM',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
+        status: 'Scheduled',
+        type: 'Evidence & Commissioner Report Verification',
+        suggestedByAi: false,
+      },
+      {
+        caseId: case5.id,
+        date: todayIso,
+        time: '03:45 PM',
+        courtRoom: 'Courtroom No. 3',
+        status: 'Scheduled',
+        type: 'Bail Review & Forensic Record Examination',
         suggestedByAi: false,
       },
       // 1 Tomorrow's Hearing
@@ -469,7 +489,7 @@ async function main() {
         caseId: case3.id,
         date: tomorrowIso,
         time: '10:30 AM',
-        courtRoom: 'Courtroom No. 1',
+        courtRoom: 'Courtroom No. 2',
         status: 'Scheduled',
         type: 'SARFAESI Section 17 Stay Review',
         suggestedByAi: true,
@@ -477,26 +497,8 @@ async function main() {
       },
       // Upcoming Hearings
       {
-        caseId: case4.id,
-        date: plus5DaysIso,
-        time: '02:30 PM',
-        courtRoom: 'Courtroom No. 4',
-        status: 'Scheduled',
-        type: 'Evidence & Commissioner Report Verification',
-        suggestedByAi: false,
-      },
-      {
-        caseId: case5.id,
-        date: plus8DaysIso,
-        time: '02:15 PM',
-        courtRoom: 'Courtroom No. 3',
-        status: 'Scheduled',
-        type: 'Bail Review & Forensic Record Examination',
-        suggestedByAi: false,
-      },
-      {
         caseId: case6.id,
-        date: plus12DaysIso,
+        date: plus5DaysIso,
         time: '11:30 AM',
         courtRoom: 'Courtroom No. 2',
         status: 'Scheduled',
@@ -505,9 +507,9 @@ async function main() {
       },
       {
         caseId: case7.id,
-        date: plus15DaysIso,
+        date: plus8DaysIso,
         time: '03:00 PM',
-        courtRoom: 'Courtroom No. 1',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
         status: 'Scheduled',
         type: 'Section 34 Final Arguments',
         suggestedByAi: false,
@@ -517,7 +519,7 @@ async function main() {
         caseId: case8.id,
         date: '2026-05-15',
         time: '10:00 AM',
-        courtRoom: 'Courtroom No. 1',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
         status: 'Completed',
         type: 'Final Judgment Delivery',
         suggestedByAi: false,
@@ -525,7 +527,7 @@ async function main() {
     ]
   });
 
-  console.log('8 Hearings seeded (Today, Tomorrow, Upcoming, Completed).');
+  console.log('8 Hearings seeded (4 Today, 1 Tomorrow, 2 Upcoming, 1 Completed).');
 
   // 5. SEED CASE DOCUMENTS & EVIDENCE
   console.log('--- Step 4: Seeding Case Documents & Evidence ---');

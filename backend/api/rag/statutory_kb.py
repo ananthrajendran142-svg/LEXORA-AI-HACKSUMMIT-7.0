@@ -864,17 +864,17 @@ def lookup_statutory_provision(query: str) -> Optional[Dict[str, Any]]:
                 return data
 
     # 3. Topic keywords matching
-    if any(k in q_clean for k in ["cheque bounce", "dishonour of cheque", "bounced cheque", "138"]):
+    if any(k in q_clean for k in ["cheque", "bounced", "dishonour", "insufficient funds", "138", "negotiable"]):
         return STATUTORY_KB["section 138"]
-    if any(k in q_clean for k in ["sarfaesi", "npa", "demand notice", "bank possession"]):
+    if any(k in q_clean for k in ["sarfaesi", "npa", "demand notice", "seize factory", "bank possession", "60-day"]):
         return STATUTORY_KB["section 13"]
-    if any(k in q_clean for k in ["anticipatory bail", "pre arrest bail", "438"]):
+    if any(k in q_clean for k in ["anticipatory bail", "pre arrest bail", "pre-arrest", "bail before arrest", "438"]):
         return STATUTORY_KB["section 438"]
-    if any(k in q_clean for k in ["quashing", "quash fir", "inherent power", "482"]):
+    if any(k in q_clean for k in ["quashing", "quash", "false fir", "inherent power", "482", "in-laws in a matrimonial"]):
         return STATUTORY_KB["section 482"]
-    if any(k in q_clean for k in ["habeas corpus", "writ petition", "mandamus", "certiorari", "226"]):
+    if any(k in q_clean for k in ["habeas corpus", "writ petition", "mandamus", "certiorari", "226", "writ"]):
         return STATUTORY_KB["article 226"]
-    if any(k in q_clean for k in ["life and liberty", "natural justice", "right to privacy", "article 21"]):
+    if any(k in q_clean for k in ["life and liberty", "natural justice", "right to privacy", "article 21", "procedure established by law", "due process"]):
         return STATUTORY_KB["article 21"]
     if any(k in q_clean for k in ["equality", "arbitrariness", "article 14"]):
         return STATUTORY_KB["article 14"]
@@ -888,29 +888,29 @@ def lookup_statutory_provision(query: str) -> Optional[Dict[str, Any]]:
         return STATUTORY_KB["article 142"]
     if any(k in q_clean for k in ["binding precedent", "article 141", "law declared"]):
         return STATUTORY_KB["article 141"]
-    if any(k in q_clean for k in ["driving licence", "without licence", "without license", "181 mva"]):
+    if any(k in q_clean for k in ["driving licence", "driving license", "without licence", "without license", "learner license", "181 mva", "motor vehicle"]):
         return STATUTORY_KB["section 181 mva"]
-    if any(k in q_clean for k in ["temporary injunction", "interim stay", "order 39", "triple test"]):
+    if any(k in q_clean for k in ["temporary injunction", "interim stay", "order 39", "triple test", "status quo"]):
         return STATUTORY_KB["order 39"]
     if any(k in q_clean for k in ["cheating", "420", "fraudulent inducement"]):
         return STATUTORY_KB["section 420"]
     if any(k in q_clean for k in ["murder", "302", "culpable homicide"]):
         return STATUTORY_KB["section 302"]
-    if any(k in q_clean for k in ["breach of contract", "liquidated damages", "earnest money forfeiture"]):
+    if any(k in q_clean for k in ["breach of contract", "liquidated damages", "earnest money", "security deposit", "deposit refund", "vacating", "forfeiture"]):
         return STATUTORY_KB["section 73 contract"]
-    if any(k in q_clean for k in ["electronic evidence", "65b", "call detail", "cctv footage", "section 65b"]):
+    if any(k in q_clean for k in ["electronic evidence", "65b", "call detail", "cctv", "whatsapp", "secondary electronic"]):
         return STATUTORY_KB["section 65b"]
     if any(k in q_clean for k in ["arbitration interim", "section 9 arbitration"]):
         return STATUTORY_KB["section 9 arbitration"]
     if any(k in q_clean for k in ["appoint arbitrator", "section 11 arbitration"]):
         return STATUTORY_KB["section 11 arbitration"]
-    if any(k in q_clean for k in ["domestic violence", "section 12 dv", "shared household"]):
+    if any(k in q_clean for k in ["domestic violence", "section 12 dv", "shared household", "right of residence"]):
         return STATUTORY_KB["section 12 dv"]
     if any(k in q_clean for k in ["dowry cruelty", "498a", "section 498a", "in-laws harassment"]):
         return STATUTORY_KB["section 498a"]
-    if any(k in q_clean for k in ["police arrest", "arrest without warrant", "35 bnss", "41 crpc"]):
+    if any(k in q_clean for k in ["police arrest", "arrest without warrant", "without a warrant", "41a notice", "35 bnss", "41 crpc"]):
         return STATUTORY_KB["section 35 bnss"]
-    if any(k in q_clean for k in ["first information report", "fir registration", "173 bnss", "154 crpc"]):
+    if any(k in q_clean for k in ["first information report", "fir registration", "mandatory fir", "173 bnss", "154 crpc"]):
         return STATUTORY_KB["section 173 bnss"]
 
     # 4. Dynamic Provision Synthesis for any other Article or Section

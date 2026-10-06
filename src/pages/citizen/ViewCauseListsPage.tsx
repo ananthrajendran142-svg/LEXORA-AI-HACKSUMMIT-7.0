@@ -1,158 +1,214 @@
-import React, { useState } from 'react';
-import { Calendar, Building, Clock, Search, Filter, Eye, User, Scale } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Building, Clock, Search, Filter, Eye, User, Scale, RefreshCw, AlertCircle } from 'lucide-react';
+import { api } from '@/services/api';
+import { Link } from 'react-router-dom';
 
 interface CauseListItem {
   itemNo: number;
+  caseId?: string;
   caseNo: string;
   cnr: string;
   parties: string;
   stage: string;
   time: string;
+  courtRoom: string;
   advocate: string;
   statute: string;
+  date: string;
+  judgeName?: string;
 }
 
-const courtroomSchedules: Record<string, Record<string, CauseListItem[]>> = {
-  c1: { // Courtroom #1 - Commercial Debt & SARFAESI (Justice Rajesh Sharma)
-    '2026-08-07': [
-      { itemNo: 1, caseNo: 'WP(C) 412/2024', cnr: 'MHBM010041202024', parties: 'State Bank of India vs. M/s Apex Enterprises Pvt. Ltd.', stage: 'Final Arguments on Possession', time: '10:30 AM', advocate: 'Adv. Vikramaditya Sen', statute: 'SARFAESI Act Sec 13(4)' },
-      { itemNo: 2, caseNo: 'CIV.SUIT 104/2025', cnr: 'MHBM010010402025', parties: 'HDFC Bank Ltd. vs. Om Infra Projects & Ors.', stage: 'Written Statement Verification', time: '11:15 AM', advocate: 'Adv. Priya Nair', statute: 'CPC Order VIII Rule 1' },
-      { itemNo: 3, caseNo: 'COMM.SUIT 889/2026', cnr: 'MHBM010088902026', parties: 'ICICI Bank vs. Century Mills Ltd.', stage: 'Interim Stay Application', time: '12:00 PM', advocate: 'Adv. Rajesh Kumar', statute: 'Commercial Courts Act' },
-      { itemNo: 4, caseNo: 'OA 512/2026', cnr: 'MHBM010051202026', parties: 'Axis Bank Ltd. vs. Sterling Biotech', stage: 'Debt Recovery Trial', time: '02:15 PM', advocate: 'Adv. Meenakshi Sundaram', statute: 'DRT Act 1993 Sec 19' },
-      { itemNo: 5, caseNo: 'COMM.APPEAL 304/2026', cnr: 'MHBM010030402026', parties: 'Reliance Commercial vs. Global Logistics', stage: 'Ex-Parte Order Arguments', time: '03:30 PM', advocate: 'Adv. Sunita Rao', statute: 'CPC Order XXXIX' },
-    ],
-    '2026-08-08': [
-      { itemNo: 1, caseNo: 'COMM.SUIT 910/2026', cnr: 'MHBM010091002026', parties: 'Bank of Baroda vs. Zenith Steel Ltd.', stage: 'Framing of Statutory Issues', time: '10:30 AM', advocate: 'Adv. Ananya Roy', statute: 'Commercial Courts Act' },
-      { itemNo: 2, caseNo: 'WP(C) 842/2025', cnr: 'MHBM010084202025', parties: 'Punjab National Bank vs. Mahaveer Builders', stage: 'Counter Affidavit Review', time: '11:30 AM', advocate: 'Adv. Suresh Mehta', statute: 'SARFAESI Act Sec 17' },
-      { itemNo: 3, caseNo: 'OA 102/2026', cnr: 'MHBM010010202026', parties: 'Canara Bank vs. Delta Shipping Corp', stage: 'Cross Examination of Witness', time: '02:30 PM', advocate: 'Adv. Neha Kulkarni', statute: 'DRT Recovery Rules' },
-    ]
-  },
-  c2: { // Courtroom #2 - Criminal Appeals & Bail (Justice Meenakshi Sundaram)
-    '2026-08-07': [
-      { itemNo: 1, caseNo: 'BAIL.APP 889/2026', cnr: 'MHBM020088902026', parties: 'State of Maharashtra vs. Vijay Deshmukh', stage: 'Anticipatory Bail Arguments', time: '10:30 AM', advocate: 'Adv. K.T. Seshadri', statute: 'CrPC Sec 438 / BNSS 482' },
-      { itemNo: 2, caseNo: 'CRL.APPEAL 401/2025', cnr: 'MHBM020040102025', parties: 'Suresh Patil vs. State of Maharashtra', stage: 'Suspension of Sentence Motion', time: '11:30 AM', advocate: 'Adv. Devendra Sharma', statute: 'CrPC Sec 389' },
-      { itemNo: 3, caseNo: 'CRL.REV 215/2026', cnr: 'MHBM020021502026', parties: 'Sunita Gaikwad vs. Ramesh Gaikwad', stage: 'Maintenance Order Revision', time: '12:30 PM', advocate: 'Adv. Smita Deshmukh', statute: 'CrPC Sec 125' },
-      { itemNo: 4, caseNo: 'BAIL.APP 942/2026', cnr: 'MHBM020094202026', parties: 'State vs. Mohammed Ibrahim', stage: 'Regular Bail Hearing', time: '02:30 PM', advocate: 'Adv. Tariq Mansoor', statute: 'CrPC Sec 439' },
-    ],
-    '2026-08-08': [
-      { itemNo: 1, caseNo: 'BAIL.APP 955/2026', cnr: 'MHBM020095502026', parties: 'State vs. Anand Kulkarni', stage: 'Anticipatory Bail Hearing', time: '10:30 AM', advocate: 'Adv. R.S. Pathak', statute: 'CrPC Sec 438' },
-      { itemNo: 2, caseNo: 'CRL.PET 312/2026', cnr: 'MHBM020031202026', parties: 'Deepak Merchant vs. State of Maharashtra', stage: 'FIR Quashing Arguments', time: '11:45 AM', advocate: 'Adv. Gopal Subramanium', statute: 'CrPC Sec 482' },
-    ]
-  },
-  c3: { // Courtroom #3 - Constitutional Writs (Justice Vikramaditya Deshmukh)
-    '2026-08-07': [
-      { itemNo: 1, caseNo: 'WP(C) 1042/2026', cnr: 'MHBM030104202026', parties: 'Environment Protection Forum vs. State of Maharashtra', stage: 'Public Interest Litigation (PIL)', time: '10:30 AM', advocate: 'Adv. Indira Jaising', statute: 'Article 226 / Art 21' },
-      { itemNo: 2, caseNo: 'WP(C) 880/2025', cnr: 'MHBM030088002025', parties: 'Dr. Rahul Varma vs. University Grants Commission', stage: 'Service Writ Arguments', time: '11:45 AM', advocate: 'Adv. Kapil Sibal', statute: 'Article 226' },
-      { itemNo: 3, caseNo: 'WP(C) 1205/2026', cnr: 'MHBM030120502026', parties: 'Apex Traders Union vs. GST Commissioner', stage: 'Tax Penalty Stay Motion', time: '02:15 PM', advocate: 'Adv. Harish Salve', statute: 'CGST Act Sec 107' },
-    ],
-    '2026-08-08': [
-      { itemNo: 1, caseNo: 'WP(C) 1290/2026', cnr: 'MHBM030129002026', parties: 'Kisan Kalyan Samiti vs. Union of India', stage: 'Land Acquisition Stay', time: '10:30 AM', advocate: 'Adv. Prashant Bhushan', statute: 'Article 300A' },
-      { itemNo: 2, caseNo: 'WP(C) 740/2025', cnr: 'MHBM030074002025', parties: 'Municipal Officers Union vs. State', stage: 'Pension Order Review', time: '12:00 PM', advocate: 'Adv. Abhishek Singhvi', statute: 'Article 226' },
-    ]
-  },
-  c4: { // Courtroom #4 - Civil Land & Property (Justice Sunita Rao)
-    '2026-08-07': [
-      { itemNo: 1, caseNo: 'CIV.SUIT 412/2024', cnr: 'MHBM040041202024', parties: 'Ramesh Patel vs. Municipal Corporation', stage: 'W.S. Filing & Title Maps', time: '10:30 AM', advocate: 'Adv. Priya Nair', statute: 'CPC Order VIII Rule 1' },
-      { itemNo: 2, caseNo: 'FIRST.APPEAL 210/2025', cnr: 'MHBM040021002025', parties: 'Savitri Devi vs. Shantilal & Ors.', stage: 'Partition Decree Appeal', time: '11:45 AM', advocate: 'Adv. Mahesh Jethmalani', statute: 'Hindu Succession Act' },
-      { itemNo: 3, caseNo: 'CIV.REVISION 109/2026', cnr: 'MHBM040010902026', parties: 'Standard Lease Corp vs. City Tenants Co-op', stage: 'Eviction Order Stay', time: '02:30 PM', advocate: 'Adv. Mukul Rohatgi', statute: 'Maharashtra Rent Control Act' },
-    ],
-    '2026-08-08': [
-      { itemNo: 1, caseNo: 'CIV.SUIT 519/2026', cnr: 'MHBM040051902026', parties: 'Balkrishna Trust vs. State Land Revenue Dept', stage: 'Injunction Notice Hearing', time: '10:30 AM', advocate: 'Adv. Arvind Datar', statute: 'Specific Relief Act' },
-    ]
-  }
-};
-
 export const ViewCauseListsPage: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState('2026-08-07');
-  const [selectedCourtKey, setSelectedCourtKey] = useState('c1');
+  const [hearings, setHearings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const courtNames: Record<string, string> = {
-    c1: 'Courtroom #1 — Commercial Debt & SARFAESI (Hon\'ble Justice Rajesh Sharma)',
-    c2: 'Courtroom #2 — Criminal Appeals & Bail (Hon\'ble Justice Meenakshi Sundaram)',
-    c3: 'Courtroom #3 — Constitutional Writs Art 226 (Hon\'ble Justice Vikramaditya Deshmukh)',
-    c4: 'Courtroom #4 — Civil Land & Property Disputes (Hon\'ble Justice Sunita Rao)',
-  };
+  const now = new Date();
+  const todayIso = now.toISOString().split('T')[0];
+  const tomorrowIso = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const plus3DaysIso = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+  const plus7DaysIso = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
 
-  const getList = (): CauseListItem[] => {
-    const courtSched = courtroomSchedules[selectedCourtKey];
-    if (courtSched && courtSched[selectedDate]) {
-      return courtSched[selectedDate];
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [selectedCourtKey, setSelectedCourtKey] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchHearings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.getHearings();
+      const rawList = Array.isArray(res) ? res : (res?.data || []);
+      setHearings(rawList);
+    } catch (err: any) {
+      console.error('Failed to load live cause list hearings:', err);
+      setError(err?.message || 'Failed to connect to judicial cause list registry.');
+    } finally {
+      setLoading(false);
     }
-    // Dynamic fallback list if date selected is outside pre-seeded array
-    return [
-      { itemNo: 1, caseNo: 'WP(C) 991/2026', cnr: 'MHBM010099102026', parties: 'General Public Petition vs. Registry Department', stage: 'Preliminary Motion', time: '10:30 AM', advocate: 'Adv. Registered Advocate', statute: 'High Court Rules' },
-      { itemNo: 2, caseNo: 'CIV.SUIT 810/2026', cnr: 'MHBM010081002026', parties: 'State Housing Federation vs. Private Developers', stage: 'Notice Returnable', time: '11:30 AM', advocate: 'Adv. Senior Counsel', statute: 'CPC Order V' },
-      { itemNo: 3, caseNo: 'MISC.APP 412/2026', cnr: 'MHBM010041202026', parties: 'Commercial Bank vs. Borrower Guarantors', stage: 'Document Verification', time: '02:15 PM', advocate: 'Adv. Bank Counsel', statute: 'Banking Laws' },
-    ];
   };
 
-  const activeList = getList();
+  useEffect(() => {
+    fetchHearings();
+  }, []);
+
+  // Format date helper
+  const formatDateLabel = (isoDate: string) => {
+    if (isoDate === todayIso) return `Today (${new Date(isoDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`;
+    if (isoDate === tomorrowIso) return `Tomorrow (${new Date(isoDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`;
+    return new Date(isoDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  // Convert raw hearings into unified cause list items
+  const processedList: CauseListItem[] = hearings.map((h, idx) => {
+    const caseObj = h.case || {};
+    const cnr = `MHHC${(caseObj.caseNumber || 'LEX001').replace(/[^a-zA-Z0-9]/g, '').slice(0, 10)}${new Date().getFullYear()}`;
+    return {
+      itemNo: idx + 1,
+      caseId: h.caseId || caseObj.id,
+      caseNo: caseObj.caseNumber || 'LEX/REF/2026',
+      cnr,
+      parties: caseObj.title || 'Petitioner vs. Respondent',
+      stage: h.type || 'Regular Hearing',
+      time: h.time || '10:30 AM',
+      courtRoom: h.courtRoom || 'Courtroom No. 1 (Bench II)',
+      advocate: caseObj.lawyer?.name || 'Advocate on Record',
+      statute: caseObj.type === 'Writ Petition' ? 'Article 226 / Constitution' : caseObj.type === 'Criminal Appeal' ? 'CrPC / BNSS' : 'Civil Procedure Code (CPC)',
+      date: h.date,
+      judgeName: caseObj.judge?.name || "Hon'ble Presiding Judge",
+    };
+  });
+
+  // Filter based on selected criteria
+  const filteredList = processedList.filter((item) => {
+    // Date filter
+    if (selectedDate !== 'ALL' && item.date !== selectedDate) {
+      return false;
+    }
+    // Courtroom filter
+    if (selectedCourtKey !== 'ALL') {
+      if (!item.courtRoom.toLowerCase().includes(selectedCourtKey.toLowerCase())) {
+        return false;
+      }
+    }
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const match =
+        item.caseNo.toLowerCase().includes(q) ||
+        item.parties.toLowerCase().includes(q) ||
+        item.stage.toLowerCase().includes(q) ||
+        item.courtRoom.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-subtle pb-4">
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          Daily Courtroom Cause List & Bench Schedule
-        </h1>
-        <p className="theme-subtext text-xs sm:text-sm mt-1">
-          Real-time Item Numbers, Presiding Judges, Scheduled Hearing Times, and Daily Court Listings
-        </p>
-      </div>
-
-      {/* Filter Controls */}
-      <div className="theme-card rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-lg">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-xs font-bold theme-subtext">Select Date:</span>
-          <select
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-3.5 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
-          >
-            <option value="2026-08-07">Today (07 August 2026)</option>
-            <option value="2026-08-08">Tomorrow (08 August 2026)</option>
-            <option value="2026-08-10">Monday (10 August 2026)</option>
-            <option value="2026-08-12">Wednesday (12 August 2026)</option>
-          </select>
+      <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[var(--primary-accent)]">
+            HIGH COURT OF JUDICATURE · OFFICIAL REGISTRY
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold theme-heading flex items-center gap-2 mt-0.5">
+            <Calendar className="w-6 h-6 text-amber-500" />
+            Daily Courtroom Cause List &amp; Bench Schedule
+          </h1>
+          <p className="theme-subtext text-xs sm:text-sm mt-1">
+            Real-time Item Numbers, Presiding Judges, Scheduled Hearing Times, and Daily Court Listings synced directly with the Judicial Database.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-xs font-bold theme-subtext">Select Courtroom Bench:</span>
-          <select
-            value={selectedCourtKey}
-            onChange={(e) => setSelectedCourtKey(e.target.value)}
-            className="px-3.5 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer"
-          >
-            <option value="c1">Courtroom #1 (Justice Rajesh Sharma - Commercial Debt & SARFAESI)</option>
-            <option value="c2">Courtroom #2 (Justice Meenakshi Sundaram - Criminal Appeals & Bail)</option>
-            <option value="c3">Courtroom #3 (Justice Vikramaditya Deshmukh - Writs Art 226)</option>
-            <option value="c4">Courtroom #4 (Justice Sunita Rao - Civil Land & Property)</option>
-          </select>
+        <button
+          onClick={fetchHearings}
+          className="p-2 theme-elevated border border-subtle rounded text-xs theme-subtext hover:theme-heading cursor-pointer flex items-center gap-1.5 self-end sm:self-auto"
+          title="Refresh Live Cause List"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span className="font-semibold">Refresh Grid</span>
+        </button>
+      </div>
+
+      {error && (
+        <div className="p-4 theme-elevated border border-subtle text-amber-600 dark:text-amber-400 text-xs rounded-xl flex items-center gap-2 shadow-sm">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Filter Controls */}
+      <div className="theme-card rounded-xl p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-lg border border-subtle">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-bold theme-subtext">Listing Date:</span>
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-1.5 theme-elevated border border-subtle rounded text-xs font-bold theme-heading outline-none cursor-pointer"
+            >
+              <option value={todayIso}>Today ({formatDateLabel(todayIso)})</option>
+              <option value={tomorrowIso}>Tomorrow ({formatDateLabel(tomorrowIso)})</option>
+              <option value={plus3DaysIso}>Next 3 Days ({formatDateLabel(plus3DaysIso)})</option>
+              <option value={plus7DaysIso}>Next 7 Days ({formatDateLabel(plus7DaysIso)})</option>
+              <option value="ALL">All Cause Lists (Full Term)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Building className="w-4 h-4 text-amber-500" />
+            <span className="text-xs font-bold theme-subtext">Courtroom / Bench:</span>
+            <select
+              value={selectedCourtKey}
+              onChange={(e) => setSelectedCourtKey(e.target.value)}
+              className="px-3 py-1.5 theme-elevated border border-subtle rounded text-xs font-bold theme-heading outline-none cursor-pointer"
+            >
+              <option value="ALL">All Courtrooms &amp; Benches</option>
+              <option value="Courtroom No. 1">Courtroom No. 1 (Hon'ble Justice Rajesh Sharma)</option>
+              <option value="Courtroom No. 2">Courtroom No. 2 (Hon'ble Justice Ananya Rao)</option>
+              <option value="Courtroom No. 3">Courtroom No. 3 (Hon'ble Justice Vikram Menon)</option>
+              <option value="Courtroom No. 4">Courtroom No. 4 (District Civil Court)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="relative min-w-[220px]">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 theme-subtext" />
+          <input
+            type="text"
+            placeholder="Search by case #, party..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-xs theme-elevated border border-subtle rounded theme-heading placeholder:theme-subtext outline-none"
+          />
         </div>
       </div>
 
       {/* Bench Header Card */}
-      <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex justify-between items-center flex-wrap gap-2">
+      <div className="p-3.5 theme-elevated border border-subtle rounded-xl text-xs flex justify-between items-center flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Active Listing for: <strong>{courtNames[selectedCourtKey]}</strong></span>
+          <Scale className="w-4 h-4 text-[var(--primary-accent)]" />
+          <span className="theme-subtext">
+            Active Listing Filter: <strong className="theme-heading">{selectedCourtKey === 'ALL' ? 'All High Court Benches' : selectedCourtKey}</strong> | Date: <strong className="theme-heading">{formatDateLabel(selectedDate)}</strong>
+          </span>
         </div>
-        <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold badge-supported px-2.5 py-1 rounded">
-          {activeList.length} Matters Scheduled on {selectedDate}
+        <span className="font-mono font-bold badge-supported px-2.5 py-1 rounded text-[11px]">
+          {filteredList.length} {filteredList.length === 1 ? 'Matter' : 'Matters'} Listed
         </span>
       </div>
 
       {/* Cause List Table */}
       <div className="theme-card rounded-xl overflow-hidden shadow-xl border border-subtle">
         <div className="p-4 border-b border-subtle theme-elevated flex justify-between items-center">
-          <h2 className="text-base font-serif font-bold theme-heading flex items-center gap-2">
-            <Building className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            Official Daily Cause List Schedule
+          <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+            <Building className="w-4 h-4 text-amber-500" />
+            Official Daily Cause List Docket
           </h2>
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">Verified Court Registry Listing</span>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+            ✓ Live Verified Database Sync
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -160,29 +216,70 @@ export const ViewCauseListsPage: React.FC = () => {
             <thead className="theme-elevated theme-subtext font-serif uppercase tracking-wider border-b border-subtle">
               <tr>
                 <th className="px-4 py-3">Item #</th>
-                <th className="px-4 py-3">Case Reference & CNR</th>
+                <th className="px-4 py-3">Scheduled Time &amp; Date</th>
+                <th className="px-4 py-3">Case Reference &amp; CNR</th>
                 <th className="px-4 py-3">Parties / Cause Title</th>
-                <th className="px-4 py-3">Stage of Hearing</th>
-                <th className="px-4 py-3">Statutory Provision</th>
-                <th className="px-4 py-3">Advocate on Record</th>
-                <th className="px-4 py-3">Scheduled Time</th>
+                <th className="px-4 py-3">Bench / Courtroom</th>
+                <th className="px-4 py-3">Stage &amp; Purpose</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-subtle">
-              {activeList.map((item) => (
-                <tr key={item.itemNo} className="hover:bg-blue-500/5 transition-colors">
-                  <td className="px-4 py-3 font-bold font-mono text-emerald-600 dark:text-emerald-400">#{item.itemNo}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400 block">{item.caseNo}</span>
-                    <span className="text-[10px] theme-subtext font-mono">{item.cnr}</span>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center theme-subtext">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-amber-500" />
+                    Loading live judicial cause list from backend...
                   </td>
-                  <td className="px-4 py-3 font-semibold theme-heading">{item.parties}</td>
-                  <td className="px-4 py-3 theme-subtext">{item.stage}</td>
-                  <td className="px-4 py-3 text-cyan-700 dark:text-cyan-300 font-mono text-[11px]">{item.statute}</td>
-                  <td className="px-4 py-3 theme-subtext">{item.advocate}</td>
-                  <td className="px-4 py-3 font-mono font-bold text-amber-700 dark:text-amber-300 whitespace-nowrap">{item.time}</td>
                 </tr>
-              ))}
+              ) : filteredList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center theme-subtext">
+                    No hearings scheduled matching your filter criteria on {formatDateLabel(selectedDate)}.
+                  </td>
+                </tr>
+              ) : (
+                filteredList.map((item) => (
+                  <tr key={item.itemNo} className="hover:theme-elevated transition-colors">
+                    <td className="px-4 py-3 font-bold font-mono text-[var(--primary-accent)]">
+                      #{item.itemNo}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400 block">{item.time}</span>
+                      <span className="text-[10px] font-mono theme-subtext">{item.date}</span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400 block">{item.caseNo}</span>
+                      <span className="text-[10px] theme-subtext font-mono">{item.cnr}</span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold theme-heading max-w-xs">
+                      {item.parties}
+                    </td>
+                    <td className="px-4 py-3 theme-subtext whitespace-nowrap">
+                      <span className="block font-medium theme-heading">{item.courtRoom}</span>
+                      <span className="text-[10px] theme-subtext opacity-80">{item.judgeName}</span>
+                    </td>
+                    <td className="px-4 py-3 theme-subtext">
+                      <span className="px-2 py-0.5 rounded-sm bg-[#F5EBE6] dark:bg-[#2C241E] text-[10px] font-mono font-medium">
+                        {item.stage}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {item.caseId ? (
+                        <Link
+                          to={`/citizen/status`}
+                          className="px-2.5 py-1 theme-primary-btn text-[11px] font-semibold rounded-sm inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3 h-3 text-white" />
+                          <span>Track Status</span>
+                        </Link>
+                      ) : (
+                        <span className="text-xs theme-subtext">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

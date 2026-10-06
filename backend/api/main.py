@@ -368,23 +368,27 @@ def find_similar_cases(req: SimilarCasesRequest):
 
     matches = matches[:req.top_k or 5]
 
+    # Enrich each match with Major Details, Important Details, and Highlighted Final Judgment
+    from rag.case_enricher import enrich_case_details
+    enriched_matches = [enrich_case_details(m, search_text) for m in matches]
+
     # Generate LLM explanation for top match if available
     llm_explanation = None
-    if matches:
-        top_match_excerpt = matches[0].get("excerpt", "")
+    if enriched_matches:
+        top_match_excerpt = enriched_matches[0].get("excerpt", "")
         prompt = SIMILAR_CASE_EXPLANATION_PROMPT.format(
             current_text=search_text[:1000],
             precedent_text=top_match_excerpt[:1000]
         )
         llm_explanation = call_llm(prompt) or (
-            f"Top precedent match ({matches[0].get('case_name', 'Precedent')}) demonstrates substantial ratio on "
+            f"Top precedent match ({enriched_matches[0].get('case_name', 'Precedent')}) demonstrates substantial ratio on "
             f"{stat_data['title'] if stat_data else 'procedural due process requirements and statutory interpretation principles'}."
         )
 
     return {
         "success": True,
-        "count": len(matches),
-        "matches": matches,
+        "count": len(enriched_matches),
+        "matches": enriched_matches,
         "llm_relevance_explanation": llm_explanation,
         "retrieval_mode": "GLOBAL_PRECEDENT"
     }

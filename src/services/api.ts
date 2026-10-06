@@ -219,6 +219,12 @@ export const api = {
     return request<any>(`/hearings${qStr ? `?${qStr}` : ''}`);
   },
 
+  createHearing: (data: { caseId: string; date: string; time?: string; courtRoom?: string; type?: string }) =>
+    request<any>('/hearings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   suggestHearing: (data: { caseId: string; targetDate?: string; targetTime?: string; courtRoom?: string; judgeId?: string }) =>
     request<any>('/hearings/suggest', {
       method: 'POST',

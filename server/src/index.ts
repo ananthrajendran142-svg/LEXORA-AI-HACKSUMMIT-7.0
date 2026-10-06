@@ -271,7 +271,8 @@ const distPath = distCandidates.find((p) => fs.existsSync(path.join(p, 'index.ht
 
 if (distPath) {
   console.log(`[LEXORA] Serving frontend static assets from: ${distPath}`);
-  app.use(express.static(distPath));
+  const serveDist = express.static(distPath);
+  app.use(serveDist);
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
       return next();

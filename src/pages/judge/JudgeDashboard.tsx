@@ -60,7 +60,12 @@ export const JudgeDashboard = () => {
     : cases.slice(0, 3);
 
   const todayIso = new Date().toISOString().split('T')[0];
-  const todaysHearings = hearings.filter((h) => h.date === todayIso);
+  const localTodayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const isDateToday = (d: string) => d === todayIso || d === localTodayIso;
+
+  const todaysHearings = hearings.filter((h) => isDateToday(h.date));
+  const upcomingHearings = hearings.filter((h) => (h.date >= todayIso || h.date >= localTodayIso) && h.status !== 'Completed');
+  const displayHearings = todaysHearings.length > 0 ? todaysHearings : (upcomingHearings.length > 0 ? upcomingHearings : hearings.slice(0, 5));
 
   const todayFormatted = new Intl.DateTimeFormat('en-GB', {
     weekday: 'long',
@@ -69,9 +74,8 @@ export const JudgeDashboard = () => {
     year: 'numeric',
   }).format(new Date());
 
-  const hearingsCount = String(
-    analytics?.judgeStats?.todaysHearings ?? todaysHearings.length
-  ).padStart(2, '0');
+  const realHearingsCount = analytics?.judgeStats?.todaysHearings ?? (todaysHearings.length > 0 ? todaysHearings.length : upcomingHearings.length);
+  const hearingsCount = String(realHearingsCount).padStart(2, '0');
 
   const pendingReviewsCount = String(
     analytics?.judgeStats?.pendingCases ?? cases.filter((c) => c.status === 'Pending').length
@@ -250,10 +254,15 @@ export const JudgeDashboard = () => {
       {/* Today's Cause List (Upcoming Hearings) - Full Width Section */}
       <div className="theme-card overflow-hidden">
         <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
-          <h2 className="text-sm font-serif font-bold theme-heading flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            Today's Cause List (Upcoming Hearings)
-          </h2>
+            <h2 className="text-sm font-serif font-bold theme-heading">
+              {todaysHearings.length > 0 ? "Today's Cause List (Active Bench Session)" : "Upcoming Judicial Cause List & Hearings"}
+            </h2>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              {todaysHearings.length > 0 ? `${todaysHearings.length} Today` : `${displayHearings.length} Scheduled`}
+            </span>
+          </div>
           <Link to="/judge/cases" className="text-xs font-medium text-[var(--primary-accent)] hover:underline flex items-center gap-0.5">
             Full Docket <ChevronRight className="w-3.5 h-3.5" />
           </Link>
@@ -263,27 +272,33 @@ export const JudgeDashboard = () => {
           <table className="w-full text-xs text-left border-collapse">
             <thead>
               <tr>
-                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3">Schedule &amp; Date</th>
                 <th className="px-4 py-3">Case Number</th>
                 <th className="px-4 py-3">Parties</th>
-                <th className="px-4 py-3">Division</th>
-                <th className="px-4 py-3">Stage & Purpose</th>
+                <th className="px-4 py-3">Courtroom / Division</th>
+                <th className="px-4 py-3">Stage &amp; Purpose</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {todaysHearings.length === 0 ? (
+              {displayHearings.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-6 text-center theme-subtext">
                     No hearings scheduled on today's cause list ({todayFormatted}).
                   </td>
                 </tr>
               ) : (
-                todaysHearings.map((h, i) => {
+                displayHearings.map((h, i) => {
                   const targetCaseId = h.caseId || h.case?.id || h.case?.caseNumber || '';
+                  const isToday = isDateToday(h.date);
                   return (
                     <tr key={h.id || i} className="hover:theme-elevated transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{h.time || '10:30 AM'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="font-mono font-bold text-amber-600 dark:text-amber-400 block">{h.time || '10:30 AM'}</span>
+                        <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded ${isToday ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'theme-subtext'}`}>
+                          {isToday ? 'TODAY' : h.date}
+                        </span>
+                      </td>
                       <td
                         onClick={() => targetCaseId && navigate(`/judge/cases/${encodeURIComponent(targetCaseId)}`)}
                         className="px-4 py-3 font-mono font-semibold text-[var(--primary-accent)] whitespace-nowrap cursor-pointer hover:underline"
