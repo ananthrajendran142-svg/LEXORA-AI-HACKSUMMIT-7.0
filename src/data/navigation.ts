@@ -67,7 +67,6 @@ export const staffNavItems: NavItem[] = [
   { id: 'dashboard', label: 'Staff Console', icon: LayoutDashboard, path: '/staff/dashboard', section: 'WORKSPACE' },
   { id: 'cases', label: 'Case Filings', icon: FolderOpen, path: '/judge/cases', section: 'WORKSPACE' },
   { id: 'scheduler', label: 'Courtroom Allocations', icon: CalendarPlus, path: '/admin/allocations', section: 'WORKSPACE' },
-  { id: 'assistant', label: 'Unified AI Assistant', icon: Sparkles, path: '/ai/assistant', section: 'DECISIONS' },
   { id: 'drafts', label: 'Summons & Notices', icon: FileCode, path: '/staff/notices', section: 'DECISIONS' },
   { id: 'evidence', label: 'Evidence Indexer', icon: FolderKanban, path: '/ai/evidence', section: 'DECISIONS' },
 ];

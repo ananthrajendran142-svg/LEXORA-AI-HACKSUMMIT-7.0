@@ -158,7 +158,9 @@ export const CaseWorkspacePage: React.FC = () => {
     loadData();
   }, [caseId, id]);
 
-  const tabs: CanvasTab[] = [
+  const isAdminOrStaff = userRole === 'ADMIN' || userRole === 'COURT_STAFF' || userRole === 'STAFF';
+
+  const allTabs: CanvasTab[] = [
     'Overview',
     'Documents',
     'Case Summary',
@@ -167,6 +169,10 @@ export const CaseWorkspacePage: React.FC = () => {
     'Hearings',
     'Audit Trail'
   ];
+
+  const tabs: CanvasTab[] = isAdminOrStaff
+    ? allTabs.filter((t) => t !== 'Legal Research')
+    : allTabs;
 
   if (loading) {
     return (

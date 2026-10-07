@@ -177,6 +177,12 @@ const handleLegalChat = async (req: AuthRequest, res: Response) => {
     return res.status(400).json({ error: 'Query or message is required' });
   }
 
+  if (req.user && ['ADMIN', 'COURT_STAFF', 'STAFF'].includes(String(req.user.role).toUpperCase())) {
+    return res.status(403).json({
+      error: 'Access denied: The Unified AI Legal Assistant is disabled for Administrative and Court Staff accounts.'
+    });
+  }
+
   if (activeCaseId && req.user) {
     const access = await canAccessCase(req.user, String(activeCaseId), prisma);
     if (!access.allowed) {

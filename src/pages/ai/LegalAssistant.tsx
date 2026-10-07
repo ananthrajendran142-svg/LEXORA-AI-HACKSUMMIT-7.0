@@ -51,7 +51,16 @@ export const LegalAssistant: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const caseId = searchParams.get('caseId') || undefined;
-  const isCitizen = user?.role?.toUpperCase() === 'CITIZEN';
+  const userRole = user?.role?.toUpperCase();
+  const isCitizen = userRole === 'CITIZEN';
+  const isAdminOrStaff = userRole === 'ADMIN' || userRole === 'COURT_STAFF' || userRole === 'STAFF';
+
+  useEffect(() => {
+    if (isAdminOrStaff) {
+      const redirectPath = userRole === 'ADMIN' ? '/admin/dashboard' : '/staff/dashboard';
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAdminOrStaff, userRole, navigate]);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputQuery, setInputQuery] = useState('');
@@ -248,6 +257,15 @@ export const LegalAssistant: React.FC = () => {
       ];
 
   const selectedModelData = assistantModels.find((m) => m.id === selectedModel) || assistantModels[0];
+
+  if (isAdminOrStaff) {
+    return (
+      <div className="p-8 text-center theme-card rounded border border-subtle space-y-3">
+        <p className="text-sm font-semibold theme-heading">Access Restricted</p>
+        <p className="text-xs theme-subtext">The Unified AI Legal Assistant is disabled for Administrative and Court Staff accounts.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="theme-card p-4 sm:p-6 shadow-sm space-y-4 flex flex-col min-h-[calc(100vh-140px)] font-sans">
