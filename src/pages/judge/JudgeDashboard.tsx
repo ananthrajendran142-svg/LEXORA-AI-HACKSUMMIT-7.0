@@ -65,13 +65,22 @@ export const JudgeDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const todayIso = new Date().toISOString().split('T')[0];
-  const localTodayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
-  const isDateToday = (d: string) => d === todayIso || d === localTodayIso;
+  const getLocalDateString = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const isDateToday = (d: string) => {
+    if (!d) return false;
+    const todayLocal = getLocalDateString();
+    const todayUtc = new Date().toISOString().split('T')[0];
+    const dateNorm = d.trim().split('T')[0];
+    return dateNorm === todayLocal || dateNorm === todayUtc;
+  };
 
   const todaysHearings = hearings.filter((h) => isDateToday(h.date));
-  const upcomingHearings = hearings.filter((h) => (h.date >= todayIso || h.date >= localTodayIso) && h.status !== 'Completed');
-  const displayHearings = todaysHearings.length > 0 ? todaysHearings : (upcomingHearings.length > 0 ? upcomingHearings : hearings.slice(0, 5));
 
   const todayFormatted = new Intl.DateTimeFormat('en-GB', {
     weekday: 'long',
@@ -80,7 +89,7 @@ export const JudgeDashboard = () => {
     year: 'numeric',
   }).format(new Date());
 
-  const realHearingsCount = analytics?.judgeStats?.todaysHearings ?? (todaysHearings.length > 0 ? todaysHearings.length : upcomingHearings.length);
+  const realHearingsCount = todaysHearings.length;
   const hearingsCount = String(realHearingsCount).padStart(2, '0');
 
   const pendingCasesList = cases.filter((c) => c.status === 'Pending');
@@ -95,12 +104,10 @@ export const JudgeDashboard = () => {
   const highPriorityCasesList = cases.filter((c) => c.priority === 'High');
   const highPriorityCount = String(highPriorityCasesList.length).padStart(2, '0');
 
-  // Filter matters requiring judicial attention
+  // Filter matters requiring judicial attention strictly by status or priority
   const mattersRequiringAttention = cases.filter(
     (c) => c.status === 'Pending' || c.priority === 'High'
-  ).length > 0
-    ? cases.filter((c) => c.status === 'Pending' || c.priority === 'High')
-    : cases.slice(0, 3);
+  );
 
   // Derived Cases for the Selected Category Modal
   const categoryData = useMemo(() => {
@@ -114,8 +121,8 @@ export const JudgeDashboard = () => {
       case 'today_hearings':
         title = "Today's Cause List & Scheduled Hearings";
         description = `Active Courtroom listings and bench docket for ${todayFormatted}`;
-        // Gather cases that have a hearing scheduled today (or upcoming)
-        items = displayHearings.map((h) => {
+        // Gather ONLY cases that have a hearing scheduled strictly today
+        items = todaysHearings.map((h) => {
           const matchedCase = cases.find((c) => c.id === h.caseId || c.caseNumber === h.case?.caseNumber) || h.case || {};
           return {
             ...matchedCase,
@@ -158,7 +165,7 @@ export const JudgeDashboard = () => {
     }
 
     return { title, description, items };
-  }, [selectedCategory, displayHearings, cases, pendingCasesList, highPriorityCasesList, modalSearchQuery, todayFormatted]);
+  }, [selectedCategory, todaysHearings, cases, pendingCasesList, highPriorityCasesList, modalSearchQuery, todayFormatted]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -700,16 +707,16 @@ export const JudgeDashboard = () => {
         </div>
       </div>
 
-      {/* Today's Cause List (Upcoming Hearings) - Full Width Section */}
+      {/* Today's Cause List - Full Width Section */}
       <div id="tour-judge-cause-list" className="theme-card overflow-hidden">
         <div className="px-4 py-3 border-b border-subtle theme-elevated flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <h2 className="text-sm font-serif font-bold theme-heading">
-              {todaysHearings.length > 0 ? "Today's Cause List (Active Bench Session)" : "Upcoming Judicial Cause List & Hearings"}
+              Today's Cause List (Active Bench Session)
             </h2>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              {todaysHearings.length > 0 ? `${todaysHearings.length} Today` : `${displayHearings.length} Scheduled`}
+              {todaysHearings.length} Listed
             </span>
           </div>
           <Link to="/judge/cases" className="text-xs font-medium text-[var(--primary-accent)] hover:underline flex items-center gap-0.5">
@@ -730,14 +737,18 @@ export const JudgeDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {displayHearings.length === 0 ? (
+              {todaysHearings.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center theme-subtext">
-                    No hearings scheduled on today's cause list ({todayFormatted}).
+                  <td colSpan={6} className="px-4 py-8 text-center theme-subtext">
+                    <div className="flex flex-col items-center justify-center space-y-1.5 py-4">
+                      <Calendar className="w-7 h-7 text-amber-500/40" />
+                      <p className="font-semibold text-xs theme-heading">No hearings scheduled on today's cause list</p>
+                      <p className="text-[11px] opacity-75">No court matters are assigned for hearing on {todayFormatted}.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                displayHearings.map((h, i) => {
+                todaysHearings.map((h, i) => {
                   const targetCaseId = h.caseId || h.case?.id || h.case?.caseNumber || '';
                   const isToday = isDateToday(h.date);
                   return (
