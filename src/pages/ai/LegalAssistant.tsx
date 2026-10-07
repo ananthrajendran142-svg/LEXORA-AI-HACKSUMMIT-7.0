@@ -27,6 +27,8 @@ import { FormattedMarkdown } from '@/components/common/FormattedMarkdown';
 interface Message {
   sender: 'user' | 'ai';
   text: string;
+  modelName?: string;
+  modelIcon?: string;
   grounded?: boolean;
   sources?: EvidenceSource[];
   mode?: string;
@@ -168,13 +170,14 @@ export const LegalAssistant: React.FC = () => {
         {
           sender: 'ai',
           text: res.answer || res.text || 'No authoritative response generated.',
+          modelName: selectedModelData.name,
+          modelIcon: selectedModelData.iconText,
           grounded: Boolean(res.grounded),
           sources: res.sources || [],
           mode: res.mode || (selectedModel.toUpperCase() + ' · ' + researchDepth),
           evidenceStatus: res.evidence_status || (res.grounded ? 'SUPPORTED' : 'INSUFFICIENT_EVIDENCE'),
           evidenceStrength: res.evidence_strength || 'HIGH',
           currentness: res.currentness || 'VERIFIED',
-          simpleExplanation: res.simple_explanation,
           warnings: res.warnings || [],
           falsePremiseDetected: Boolean(res.false_premise_detected),
           falsePremiseReason: res.false_premise_reason,
@@ -379,7 +382,9 @@ export const LegalAssistant: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Scale className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="text-xs font-serif font-bold theme-heading">LEXORA</span>
+                      <span className="text-xs font-serif font-bold theme-heading">
+                        {msg.modelIcon || '🤖'} {msg.modelName || 'LEXORA'}
+                      </span>
                       {msg.mode && (
                         <span className="text-[9px] font-mono font-semibold uppercase px-2 py-0.5 rounded-sm border border-subtle theme-elevated theme-subtext">
                           {msg.mode.replace('_', ' ')}
@@ -400,16 +405,6 @@ export const LegalAssistant: React.FC = () => {
                   <div className="theme-card p-5 space-y-4 shadow-sm border border-subtle rounded-lg">
                     {/* Legal Answer Text */}
                     <FormattedMarkdown content={msg.text} />
-
-                    {/* Plain Language Overview */}
-                    {msg.simpleExplanation && (
-                      <div className="pt-3 border-t border-subtle theme-elevated p-3 rounded-lg border border-subtle">
-                        <span className="text-[10px] font-mono font-bold uppercase text-blue-600 dark:text-blue-400 block mb-1">
-                          Plain-Language Overview:
-                        </span>
-                        <p className="text-[11px] theme-subtext leading-relaxed">{msg.simpleExplanation}</p>
-                      </div>
-                    )}
 
                     {/* Expandable Sources & Evidence Section */}
                     {msg.sources && msg.sources.length > 0 && (

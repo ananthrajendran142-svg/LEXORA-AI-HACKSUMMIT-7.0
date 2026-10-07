@@ -875,6 +875,33 @@ def unified_legal_chat(
             "currentness": "VERIFIED"
         })
 
+    # Check for attached document text in query and prioritize for LEXORA RAG
+    if "[ATTACHED FILE FOR ANALYSIS:" in q_clean:
+        try:
+            attach_match = re.search(r"\[ATTACHED FILE FOR ANALYSIS:\s*([^\]]+)\]\n?(.*?)(?:\n\nUSER QUESTION:|$)", q_clean, re.DOTALL)
+            if attach_match:
+                doc_name = attach_match.group(1).strip()
+                doc_content = attach_match.group(2).strip()
+                if doc_content:
+                    raw_context.insert(0, {
+                        "chunk_id": "uploaded_doc_main",
+                        "title": f"Uploaded Document: {doc_name}",
+                        "document_id": "uploaded_doc",
+                        "case_name": doc_name,
+                        "court": "Uploaded Matter Record",
+                        "year": 2026,
+                        "act": "Uploaded Legal Document",
+                        "section": "Uploaded Document Clauses",
+                        "citation": doc_name,
+                        "authority_level": 1,
+                        "relevance_score": 1.0,
+                        "excerpt": doc_content[:2000],
+                        "source_url": "",
+                        "currentness": "VERIFIED"
+                    })
+        except Exception:
+            pass
+
     # Deduplicate and rank evidence chunks using Question-Relevance Scoring
     context_items = rank_and_deduplicate_chunks(raw_context, top_k=4, query=q_clean)
 
@@ -913,7 +940,15 @@ def unified_legal_chat(
         )
 
     if provider:
-        prompt += "\n\nCRITICAL INSTRUCTION: Keep the answer simple, direct, clear, and easy to understand in plain language. Avoid dense jargon, unnecessary academic sections, or artificial tables."
+        p_str = str(provider).lower()
+        if "rag" in p_str or "hybrid" in p_str:
+            prompt += "\n\nCRITICAL MODEL INSTRUCTION: You are LEXORA Hybrid RAG. Base your analysis directly on the uploaded documents, attached results, and retrieved legal evidence."
+        elif "gemini" in p_str or "google" in p_str:
+            prompt += "\n\nCRITICAL MODEL INSTRUCTION: You are Google Gemini 1.5 Pro. Provide a clear, balanced legal analysis assessing statutory provisions and practical considerations in simple terms."
+        elif "openai" in p_str or "gpt" in p_str or "chatgpt" in p_str:
+            prompt += "\n\nCRITICAL MODEL INSTRUCTION: You are ChatGPT (GPT-4o). Provide a direct, practical, and actionable legal guidance answer in clear, simple language."
+        elif "llama" in p_str:
+            prompt += "\n\nCRITICAL MODEL INSTRUCTION: You are Secure Llama 3. Provide a confidential statutory analysis focusing on legal compliance, liability, and rights."
 
     llm_answer = call_llm(prompt, temperature=0.0, max_tokens=max_tokens_to_use, provider=provider)
 
