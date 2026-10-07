@@ -148,59 +148,12 @@ def _clean_json_response(raw_res: str) -> Optional[Dict[str, Any]]:
     return None
 
 def format_answer_by_provider(base_answer: str, provider: Optional[str], query: str) -> str:
-    """Formats the synthesized answer according to the selected model's specific answering technique."""
+    """Formats the synthesized answer cleanly, keeping it simple, clear, and direct."""
     if not base_answer:
         return base_answer
 
-    prov = (provider or "gemini").lower().strip()
-    
-    # Strip any existing header if re-formatting
+    # Clean any robotic multi-level prefixes or fences
     clean_base = re.sub(r'^###\s+.*?\n\n', '', base_answer, flags=re.DOTALL).strip()
-
-    # 1. LEXORA Hybrid RAG (Statutory IRAC Vector Search)
-    if any(k in prov for k in ["rag", "hybrid", "lexora"]):
-        return (
-            "### ⚖️ LEXORA Hybrid RAG · Statutory Vector Search & IRAC Analysis\n\n"
-            f"{clean_base}\n\n"
-            "---\n"
-            "**Statutory Vector Citation**: *Grounded in Indian Legal Corpus (BNS 2023 / IPC 1860 / Contract Act 1872)*\n"
-            "**Grounding Status**: `AUTHORITATIVE VECTOR RETRIEVAL (Confidence Score: 0.96)`"
-        )
-        
-    # 2. Google Gemini 1.5 Pro (Deep Analytical Reasoning & Risk Matrix)
-    elif any(k in prov for k in ["gemini", "google"]):
-        return (
-            "### 💡 Google Gemini 1.5 Pro · Analytical Legal Reasoning & Risk Matrix\n\n"
-            f"{clean_base}\n\n"
-            "**Key Evaluative Takeaways:**\n"
-            "1. *Intent vs Accident (Mens Rea)*: Unintentional actions negate criminal intent required under Indian Penal Law.\n"
-            "2. *Statutory Property Standing*: Private property is governed by civil tort compensation, while heritage monuments are protected under the Ancient Monuments Act.\n"
-            "3. *Risk Mitigation*: Always obtain an itemized valuation receipt for any property damage settlement."
-        )
-
-    # 3. ChatGPT (GPT-4o) (Direct Advisory Counsel)
-    elif any(k in prov for k in ["openai", "gpt", "chatgpt"]):
-        return (
-            "### 💬 ChatGPT (GPT-4o) · Direct Advisory Counsel\n\n"
-            f"{clean_base}\n\n"
-            "**Practical Advisory Guidance:**\n"
-            "- **Immediate Reporting**: Promptly inform administration/property management to document lack of criminal intent.\n"
-            "- **Financial Restitution**: Verify damage calculation under Section 70 of the Indian Contract Act.\n"
-            "- **Formal Notice**: Request formal written receipt for any reimbursement or settlement."
-        )
-
-    # 4. Secure Llama 3 (Enterprise On-Premises Statutory Audit)
-    elif any(k in prov for k in ["llama"]):
-        return (
-            "### 🔒 Secure Llama 3 · Enterprise Statutory Compliance Audit\n\n"
-            f"{clean_base}\n\n"
-            "| Compliance Parameter | Legal Standing | Risk Tier |\n"
-            "| :--- | :--- | :--- |\n"
-            "| **Mens Rea (Criminal Intent)** | Negated (Accidental) | Low |\n"
-            "| **Civil Indemnity (Sec 70)** | Active Liability | Moderate |\n"
-            "| **Data Privacy & Audit** | Enterprise Local Compliance | Protected |\n"
-        )
-
     return clean_base
 
 def _chunk_long_document(text: str, chunk_size: int = 4000, overlap: int = 400) -> List[Dict[str, Any]]:
@@ -960,15 +913,7 @@ def unified_legal_chat(
         )
 
     if provider:
-        p_str = str(provider).lower()
-        if "gemini" in p_str or "google" in p_str:
-            prompt += "\n\nCRITICAL MODEL INSTRUCTION: Format response using Google Gemini Analytical Reasoning style with bullet points and risk matrix evaluation."
-        elif "openai" in p_str or "gpt" in p_str or "chatgpt" in p_str:
-            prompt += "\n\nCRITICAL MODEL INSTRUCTION: Format response using OpenAI Advisory Counsel style with concise direct summaries and actionable advice."
-        elif "llama" in p_str:
-            prompt += "\n\nCRITICAL MODEL INSTRUCTION: Format response using Secure Llama 3 Enterprise Audit style with a compliance table and statutory audit notes."
-        elif "rag" in p_str or "hybrid" in p_str:
-            prompt += "\n\nCRITICAL MODEL INSTRUCTION: Format response using LEXORA Hybrid RAG Vector Search style with IRAC ratio decidendi and statutory section citations."
+        prompt += "\n\nCRITICAL INSTRUCTION: Keep the answer simple, direct, clear, and easy to understand in plain language. Avoid dense jargon, unnecessary academic sections, or artificial tables."
 
     llm_answer = call_llm(prompt, temperature=0.0, max_tokens=max_tokens_to_use, provider=provider)
 

@@ -966,39 +966,18 @@ def lookup_statutory_provision(query: str) -> Optional[Dict[str, Any]]:
 
 
 def format_statutory_research_report(data: Dict[str, Any], user_query: str) -> str:
-    """Formats a rich, exhaustive multi-authority research report."""
-    precedents_md = ""
-    for idx, p in enumerate(data.get("landmark_precedents", []), 1):
-        precedents_md += (
-            f"**{idx}. {p['case_name']} ({p['court']}, {p['citation']})**\n"
-            f"- **Ratio Decidendi / Holding:** {p['held']}\n"
-            f"- **Past Evidentiary Context:** {p['evidence_points']}\n\n"
-        )
+    """Formats a simple, clear, and direct statutory explanation."""
+    principles_md = "\n".join([f"• {pr}" for pr in data.get("principles", [])])
+    
+    precedents_list = []
+    for idx, p in enumerate(data.get("landmark_precedents", [])[:2], 1):
+        precedents_list.append(f"• **{p['case_name']}**: {p['held']}")
+    precedents_md = "\n".join(precedents_list) if precedents_list else "No landmark precedent needed."
 
-    principles_md = "\n".join([f"- {pr}" for pr in data.get("principles", [])])
-
-    return f"""### AUTHORITATIVE STATUTORY PROVISION
-**Act / Statute:** {data['act']}  
-**Provision:** {data['section']} — *{data['title']}*
-
-```text
-"{data['statutory_text']}"
-```
-
----
-
-### CORE JURISPRUDENTIAL PRINCIPLES
-{principles_md}
-
----
-
-### BINDING LANDMARK PRECEDENTS & PAST EVIDENCE
-{precedents_md}
-
----
-
-### EVIDENTIARY STANDARDS & PROCEDURAL SAFEGUARDS
-- **Burden of Proof & Required Evidence:** {data.get('evidentiary_requirements', 'Clear contemporaneous documentary record required.')}
-- **Judicial Review Standard:** Strict adherence to constitutional due process, statutory procedural timelines, and non-arbitrariness.
-"""
+    return (
+        f"**{data['section']} — {data['title']}** ({data['act']})\n\n"
+        f"{data['statutory_text']}\n\n"
+        f"**Key Points:**\n{principles_md}\n\n"
+        f"**Relevant Court Precedents:**\n{precedents_md}"
+    )
 
