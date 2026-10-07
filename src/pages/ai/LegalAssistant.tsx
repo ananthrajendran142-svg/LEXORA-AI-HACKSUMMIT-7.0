@@ -212,6 +212,7 @@ export const LegalAssistant: React.FC = () => {
           {
             id: 'hybrid' as const,
             name: 'LEXORA Hybrid RAG',
+            iconText: '⚡',
             badge: 'Grounded Legal Vector RAG',
             icon: Zap,
             iconColor: 'text-amber-500',
@@ -226,6 +227,7 @@ export const LegalAssistant: React.FC = () => {
     {
       id: 'gemini' as const,
       name: 'Google Gemini 1.5 Pro',
+      iconText: '🤖',
       badge: 'Multimodal Legal Logic',
       icon: Sparkles,
       iconColor: 'text-blue-500',
@@ -238,6 +240,7 @@ export const LegalAssistant: React.FC = () => {
     {
       id: 'openai' as const,
       name: 'ChatGPT (GPT-4o)',
+      iconText: '🧠',
       badge: 'Advanced Synthesis',
       icon: Bot,
       iconColor: 'text-emerald-500',
@@ -250,6 +253,7 @@ export const LegalAssistant: React.FC = () => {
     {
       id: 'llama' as const,
       name: 'Secure Llama 3',
+      iconText: '🔒',
       badge: 'Private On-Prem LLM',
       icon: ShieldCheck,
       iconColor: 'text-purple-500',
@@ -589,92 +593,69 @@ export const LegalAssistant: React.FC = () => {
         </div>
 
         {/* ── Right Column: AI Assistants & Engine Controls Sidebar ── */}
-        <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-subtle pt-4 lg:pt-0 lg:pl-5">
+        <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-subtle pt-4 lg:pt-0 lg:pl-5">
           
-          {/* Section 1: AI Assistant Engines Selection */}
-          <div className="space-y-2.5">
+          {/* Section 1: AI Assistant Engines Selection (Small Dropdown Box) */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Bot className="w-4 h-4 text-[var(--primary-accent)]" />
-                <h3 className="text-xs font-mono font-bold uppercase tracking-wider theme-heading">
+                <Bot className="w-3.5 h-3.5 text-[var(--primary-accent)]" />
+                <label htmlFor="ai-engine-select" className="text-[11px] font-mono font-bold uppercase tracking-wider theme-heading">
                   AI ASSISTANT ENGINES
-                </h3>
+                </label>
               </div>
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 ACTIVE
               </span>
             </div>
 
-            <p className="text-[11px] theme-subtext">
-              Select the active AI assistant model for research, analysis, and reasoning:
-            </p>
+            {/* Small Dropdown Box */}
+            <select
+              id="ai-engine-select"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as any)}
+              className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer focus:ring-1 focus:ring-[var(--primary-accent)] shadow-xs"
+            >
+              {assistantModels.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.iconText} {m.name} ({m.badge})
+                </option>
+              ))}
+            </select>
 
-            {/* AI Assistant Models Cards */}
-            <div className="space-y-2">
-              {assistantModels.map((m) => {
-                const IconComponent = m.icon;
-                const isSelected = selectedModel === m.id;
-
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => setSelectedModel(m.id)}
-                    className={`theme-card p-3 rounded-xl border transition-all cursor-pointer group relative ${
-                      isSelected
-                        ? m.activeRing
-                        : 'border-subtle hover:border-subtle hover:theme-elevated'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2.5">
-                        <div className={`w-8 h-8 rounded-lg ${m.bgGlow} border ${m.borderColor} flex items-center justify-center shrink-0 mt-0.5`}>
-                          <IconComponent className={`w-4 h-4 ${m.iconColor}`} />
-                        </div>
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="text-xs font-bold theme-heading group-hover:text-[var(--primary-accent)] transition-colors">
-                              {m.name}
-                            </h4>
-                          </div>
-                          <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-surface border border-subtle theme-subtext inline-block">
-                            {m.badge}
-                          </span>
-                          <p className="text-[11px] theme-subtext leading-tight mt-1">
-                            {m.desc}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Selection Checkmark */}
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                        isSelected
-                          ? 'bg-[var(--primary-accent)] border-[var(--primary-accent)] text-white'
-                          : 'border-subtle opacity-40 group-hover:opacity-100'
-                      }`}>
-                        {isSelected && <Check className="w-2.5 h-2.5" />}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Active Engine Summary Pill */}
+            <div className="p-2.5 theme-elevated border border-subtle rounded-lg space-y-1 text-xs">
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-xs theme-heading">
+                  <span>{selectedModelData.iconText}</span>
+                  <span>{selectedModelData.name}</span>
+                </div>
+                <span className="text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded bg-surface border border-subtle theme-subtext">
+                  {selectedModelData.badge}
+                </span>
+              </div>
+              <p className="text-[11px] theme-subtext leading-tight pt-0.5">
+                {selectedModelData.desc}
+              </p>
             </div>
           </div>
 
-          {/* Section 2: Research & Reasoning Mode */}
+          {/* Section 2: Research & Reasoning Mode (Small Dropdown Box) */}
           <div className="space-y-2 pt-2 border-t border-subtle">
             <div className="flex items-center gap-1.5">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--primary-accent)]" />
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider theme-heading">
+              <label htmlFor="reasoning-depth-select" className="text-[11px] font-mono font-bold uppercase tracking-wider theme-heading">
                 REASONING DEPTH
-              </h3>
+              </label>
             </div>
 
             <div className="space-y-1.5">
               <select
+                id="reasoning-depth-select"
                 value={researchDepth}
                 onChange={(e) => setResearchDepth(e.target.value as any)}
-                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer focus:ring-1 focus:ring-[var(--primary-accent)]"
+                className="w-full px-3 py-2 theme-elevated border border-subtle rounded-lg text-xs font-bold theme-heading outline-none cursor-pointer focus:ring-1 focus:ring-[var(--primary-accent)] shadow-xs"
               >
                 <option value="STANDARD">⚡ Standard Legal Q&amp;A</option>
                 <option value="DEEP">🔍 Deep Precedent &amp; Statute RAG</option>
@@ -691,10 +672,10 @@ export const LegalAssistant: React.FC = () => {
           </div>
 
           {/* Section 3: Active Engine Info & Safeguards */}
-          <div className="theme-elevated p-3.5 rounded-xl border border-subtle space-y-2 text-xs font-mono mt-auto">
+          <div className="theme-elevated p-3 rounded-xl border border-subtle space-y-2 text-xs font-mono mt-auto">
             <div className="flex items-center gap-1.5 text-[var(--primary-accent)]">
-              <ShieldCheck className="w-4 h-4 shrink-0" />
-              <span className="font-bold text-[11px]">ACTIVE ENGINE TELEMETRY</span>
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span className="font-bold text-[10px] uppercase">ENGINE TELEMETRY</span>
             </div>
             <div className="space-y-1 text-[10px] theme-subtext">
               <div className="flex justify-between">
