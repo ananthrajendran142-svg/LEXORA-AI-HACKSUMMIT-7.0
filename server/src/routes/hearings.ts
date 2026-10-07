@@ -6,9 +6,60 @@ import { canAccessCase, getAuthorizedHearingWhere } from '../utils/caseAuthoriza
 const router = Router();
 const prisma = new PrismaClient();
 
+let lastCheckedDate = '';
+
+async function autoAlignDemoHearingsToToday() {
+  const todayIso = new Date().toISOString().split('T')[0];
+  if (lastCheckedDate === todayIso) return;
+  lastCheckedDate = todayIso;
+
+  try {
+    const todayHearingsCount = await prisma.hearing.count({
+      where: { date: todayIso },
+    });
+
+    if (todayHearingsCount === 0) {
+      const targetCaseNumbers = [
+        'LEX/ENV/001/2026',
+        'LEX/CIV/002/2026',
+        'LEX/PROP/004/2026',
+        'LEX/WP/009/2026',
+        'LEX/COM/010/2026',
+        'LEX/CRL/011/2026',
+      ];
+
+      const cases = await prisma.case.findMany({
+        where: { caseNumber: { in: targetCaseNumbers } },
+        select: { id: true, caseNumber: true },
+      });
+
+      for (const c of cases) {
+        await prisma.case.update({
+          where: { id: c.id },
+          data: { nextHearing: todayIso },
+        });
+
+        const hearing = await prisma.hearing.findFirst({
+          where: { caseId: c.id },
+        });
+
+        if (hearing) {
+          await prisma.hearing.update({
+            where: { id: hearing.id },
+            data: { date: todayIso, status: 'Scheduled' },
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error auto-aligning demo hearings:', err);
+  }
+}
+
 // GET /api/hearings - User-scoped and paginated hearings list
 router.get('/', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
+    await autoAlignDemoHearingsToToday();
     const { caseId, date, page, limit } = req.query;
     let where: any = {};
 

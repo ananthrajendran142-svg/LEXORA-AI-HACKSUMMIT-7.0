@@ -440,13 +440,73 @@ async function main() {
     }
   });
 
-  console.log('8 Cases seeded across Criminal, Civil, Commercial, and Constitutional divisions.');
+  const case9 = await prisma.case.create({
+    data: {
+      caseNumber: 'LEX/WP/009/2026',
+      title: 'Dr. Aditi Sen & Ors. vs. State Medical Council & Health Dept',
+      description: 'Special Writ Petition under Article 226 challenging revised emergency hospital staffing regulations without mandatory statutory consultation.',
+      status: 'Pending',
+      priority: 'High',
+      division: 'Constitutional',
+      petitioner: 'Dr. Aditi Sen & Resident Doctors Welfare Association',
+      respondent: 'State Medical Council & Directorate of Health Services',
+      filingDate: '2026-03-01',
+      nextHearing: todayIso,
+      court: 'High Court of Judicature',
+      type: 'Writ Petition',
+      delayProbability: 12.0,
+      judgeId: judgeSharma.id,
+      lawyerId: lawyerPriya.id
+    }
+  });
+
+  const case10 = await prisma.case.create({
+    data: {
+      caseNumber: 'LEX/COM/010/2026',
+      title: 'FinTech Ventures LLP vs. Reserve Bank Regulatory Authority & Ors.',
+      description: 'Commercial dispute under Section 9 Commercial Courts Act regarding neo-banking escrow audit mandate and settlement license timelines.',
+      status: 'Active',
+      priority: 'High',
+      division: 'Commercial',
+      petitioner: 'FinTech Ventures LLP',
+      respondent: 'Reserve Bank Regulatory Authority & Anr.',
+      filingDate: '2026-02-18',
+      nextHearing: todayIso,
+      court: 'High Court of Judicature',
+      type: 'Commercial Suit',
+      delayProbability: 19.5,
+      judgeId: judgeSharma.id,
+      lawyerId: lawyerPriya.id
+    }
+  });
+
+  const case11 = await prisma.case.create({
+    data: {
+      caseNumber: 'LEX/CRL/011/2026',
+      title: 'State of Maharashtra vs. Sandeep Singhania & Ors.',
+      description: 'Special Criminal Revision concerning forensic audit admissibility and interim bail under Section 439 CrPC / BNSS in economic offense investigation.',
+      status: 'Pending',
+      priority: 'High',
+      division: 'Criminal',
+      petitioner: 'State of Maharashtra (Economic Offences Wing)',
+      respondent: 'Sandeep Singhania & Ors.',
+      filingDate: '2026-04-10',
+      nextHearing: todayIso,
+      court: 'High Court of Judicature',
+      type: 'Criminal Revision',
+      delayProbability: 31.0,
+      judgeId: judgeSharma.id,
+      lawyerId: lawyerPriya.id
+    }
+  });
+
+  console.log('11 Cases seeded across Criminal, Civil, Commercial, and Constitutional divisions.');
 
   // 4. SEED HEARINGS (TODAY, TOMORROW, UPCOMING, COMPLETED)
   console.log('--- Step 3: Seeding Hearings ---');
   await prisma.hearing.createMany({
     data: [
-      // 4 Today's Hearings across morning and afternoon sessions
+      // Today's Hearings on Active Cause List (Bench II & coordinate benches)
       {
         caseId: case1.id,
         date: todayIso,
@@ -469,11 +529,40 @@ async function main() {
       {
         caseId: case4.id,
         date: todayIso,
-        time: '02:30 PM',
+        time: '01:45 PM',
         courtRoom: 'Courtroom No. 1 (Bench II)',
         status: 'Scheduled',
         type: 'Evidence & Commissioner Report Verification',
         suggestedByAi: false,
+      },
+      {
+        caseId: case9.id,
+        date: todayIso,
+        time: '02:30 PM',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
+        status: 'Scheduled',
+        type: 'Admission & Notice of Motion',
+        suggestedByAi: true,
+        aiRationale: 'Statutory urgency: Public health guidelines motion listed for expedited hearing.'
+      },
+      {
+        caseId: case10.id,
+        date: todayIso,
+        time: '03:45 PM',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
+        status: 'Scheduled',
+        type: 'Interim Protection & Cross-Objections',
+        suggestedByAi: false,
+      },
+      {
+        caseId: case11.id,
+        date: todayIso,
+        time: '04:30 PM',
+        courtRoom: 'Courtroom No. 1 (Bench II)',
+        status: 'Scheduled',
+        type: 'Special Bail Application & Forensic Examination',
+        suggestedByAi: true,
+        aiRationale: 'Liberty timeline: Accused in judicial custody exceeding 60-day statutory remand threshold.'
       },
       {
         caseId: case5.id,
@@ -583,6 +672,36 @@ async function main() {
         status: 'INDEXED',
         pageCount: 2,
       },
+      {
+        caseId: case9.id,
+        fileName: 'Writ_Petition_Public_Health_Emergency.pdf',
+        filePath: 'uploads/demo/Writ_Petition_Public_Health_Emergency.pdf',
+        fileSize: 3145728,
+        mimeType: 'application/pdf',
+        uploadedBy: lawyerPriya.id,
+        status: 'INDEXED',
+        pageCount: 24,
+      },
+      {
+        caseId: case10.id,
+        fileName: 'FinTech_NeoBanking_Escrow_Audit_Report.pdf',
+        filePath: 'uploads/demo/FinTech_NeoBanking_Escrow_Audit_Report.pdf',
+        fileSize: 4194304,
+        mimeType: 'application/pdf',
+        uploadedBy: lawyerPriya.id,
+        status: 'INDEXED',
+        pageCount: 38,
+      },
+      {
+        caseId: case11.id,
+        fileName: 'Special_Bail_Application_Under_Sec439.pdf',
+        filePath: 'uploads/demo/Special_Bail_Application_Under_Sec439.pdf',
+        fileSize: 2097152,
+        mimeType: 'application/pdf',
+        uploadedBy: lawyerPriya.id,
+        status: 'INDEXED',
+        pageCount: 16,
+      },
     ]
   });
 
@@ -608,6 +727,27 @@ async function main() {
         fileType: 'BIN',
         category: 'Forensic',
         aiTags: JSON.stringify(['65B Certificate', 'SHA-256 Hash', 'Audit Trail', 'Transaction ID']),
+      },
+      {
+        caseId: case9.id,
+        fileName: 'Directorate General Health Services Advisory Notice',
+        fileType: 'PDF',
+        category: 'Documentary',
+        aiTags: JSON.stringify(['Health Guidelines', 'Article 21', 'Emergency Care', 'Duty Doctors']),
+      },
+      {
+        caseId: case10.id,
+        fileName: 'RBI Settlement Audit Compliance Certificate',
+        fileType: 'PDF',
+        category: 'Documentary',
+        aiTags: JSON.stringify(['Escrow Audit', 'Payment Systems Act', 'Commercial Courts Act', 'Reserve Bank']),
+      },
+      {
+        caseId: case11.id,
+        fileName: 'Forensic Chartered Accountant Ledger Verification',
+        fileType: 'PDF',
+        category: 'Forensic',
+        aiTags: JSON.stringify(['Forensic Audit', 'Section 439', 'Bank Records', 'Remand Verification']),
       },
     ]
   });
@@ -642,6 +782,27 @@ async function main() {
         status: 'APPROVED',
         signedById: judgeSharma.id,
         signedAt: new Date(),
+      },
+      {
+        caseId: case9.id,
+        docType: 'Notice',
+        title: 'Notice of Motion & Interim Relief Directives',
+        content: `IN THE HIGH COURT OF JUDICATURE\nCase No: LEX/WP/009/2026\n\nTo, State Medical Council & Directorate of Health Services\nNOTICE IS HEREBY ISSUED returnable within two weeks. Pending further orders, no adverse coercive actions shall be enforced against duty medical officers.`,
+        status: 'DRAFT',
+      },
+      {
+        caseId: case10.id,
+        docType: 'Order',
+        title: 'Interim Protective Escrow Custody Order',
+        content: `IN THE HIGH COURT OF JUDICATURE (COMMERCIAL DIVISION)\nCase No: LEX/COM/010/2026\n\nUPON hearing counsel, the nodal escrow account shall remain operational strictly for verified merchant settlements subject to joint weekly audits.`,
+        status: 'DRAFT',
+      },
+      {
+        caseId: case11.id,
+        docType: 'Bail Order',
+        title: 'Bail Order & Surety Conditions',
+        content: `IN THE HIGH COURT OF JUDICATURE (CRIMINAL APPELLATE BENCH)\nCase No: LEX/CRL/011/2026\n\nAccused Sandeep Singhania is hereby admitted to bail subject to executing personal bond of Rs. 2,00,000/- with two solvent sureties and surrender of travel documents.`,
+        status: 'DRAFT',
       }
     ]
   });
@@ -842,6 +1003,58 @@ async function main() {
       ]),
       riskLevel: 'Medium',
       recommendations: 'Direct parties to explore Section 89 CPC mediation for liquidated damages settlement.',
+    }
+  });
+
+  await prisma.aiAnalysis.create({
+    data: {
+      caseId: case9.id,
+      keyFindings: JSON.stringify([
+        'Subordinate notification issued without statutory consultation required under Section 14 Medical Council Act.',
+        'Prima facie impingement upon right to health under Article 21 Constitution of India.',
+        'Urgent ad-interim protection requested for emergency medical personnel duty rotations.'
+      ]),
+      legalPrecedents: JSON.stringify([
+        'Paschim Banga Khet Majoor Samity v. State of West Bengal (1996) 4 SCC 37',
+        'Parmanand Katara v. Union of India (1989) 4 SCC 286'
+      ]),
+      riskLevel: 'Low',
+      recommendations: 'Issue notice of motion with 2-week returnable date. Grant interim status quo on punitive roster enforcement.'
+    }
+  });
+
+  await prisma.aiAnalysis.create({
+    data: {
+      caseId: case10.id,
+      keyFindings: JSON.stringify([
+        'Payment and Settlement Systems Act 2007 Section 10 regulatory window contested.',
+        'Certified external auditor reports indicate 100% nodal escrow liquidity reconciliation.',
+        'Arbitrary freeze notice impacts commercial continuity of 120,000 active retail accounts.'
+      ]),
+      legalPrecedents: JSON.stringify([
+        'Internet and Mobile Association of India v. Reserve Bank of India (2020) 10 SCC 274',
+        'Dhampur Sugar Mills Ltd. v. State of U.P. (2007) 8 SCC 338'
+      ]),
+      riskLevel: 'Medium',
+      recommendations: 'Allow restricted escrow operations subject to daily verified compliance reporting to registrar.'
+    }
+  });
+
+  await prisma.aiAnalysis.create({
+    data: {
+      caseId: case11.id,
+      keyFindings: JSON.stringify([
+        'Investigation substantially complete; charge sheet ready for filing.',
+        'Passport deposited with investigating agency; zero flight risk demonstrated.',
+        'Co-accused granted interim protection by coordinate bench.'
+      ]),
+      legalPrecedents: JSON.stringify([
+        'Satender Kumar Antil v. CBI (2022) 10 SCC 51',
+        'Sanjay Chandra v. CBI (2012) 1 SCC 40',
+        'P. Chidambaram v. Directorate of Enforcement (2020) 13 SCC 791'
+      ]),
+      riskLevel: 'Medium',
+      recommendations: 'Grant regular bail subject to furnishing ₹2,00,000 surety bond and weekly police attendance.'
     }
   });
 
