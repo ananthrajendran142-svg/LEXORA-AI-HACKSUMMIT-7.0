@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileCode, Check, X, ShieldAlert, Award, FolderKanban, Clock, Eye, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileCode, Check, X, ShieldAlert, Award, FolderKanban, Clock, Eye, CheckCircle2, AlertCircle, Download, Printer, FileDown } from 'lucide-react';
 import { fastApi } from '@/services/fastapi';
 import { api } from '@/services/api';
 import { AiReviewBadge } from '@/components/common/AiReviewBadge';
@@ -111,6 +111,75 @@ export const DraftGenerator = () => {
     setDraftStatus(d.status || 'DRAFT');
   };
 
+  const handleDownloadDraft = (content: string, title?: string, caseIdentifier?: string) => {
+    if (!content) return;
+    const safeTitle = (title || `${docType}_${caseNo || 'Draft'}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `LEXORA_${safeTitle}_${new Date().toISOString().split('T')[0]}.txt`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintDraft = (content: string, title?: string) => {
+    if (!content) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print/save this document as PDF.');
+      return;
+    }
+    const docTitle = title || `${docType} - ${caseNo}`;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${docTitle}</title>
+          <style>
+            @media print {
+              @page { margin: 20mm; }
+              body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; color: #000; }
+              .no-print { display: none; }
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              padding: 40px;
+              max-width: 800px;
+              margin: 0 auto;
+              color: #111;
+              white-space: pre-wrap;
+              line-height: 1.5;
+            }
+            .watermark {
+              text-align: center;
+              font-size: 14pt;
+              font-weight: bold;
+              color: #b91c1c;
+              margin-bottom: 20px;
+              padding: 10px;
+              border: 1px dashed #b91c1c;
+            }
+          </style>
+        </head>
+        <body>
+          ${draftStatus === 'DRAFT' ? '<div class="watermark">*** DRAFT COPY — AI-GENERATED & UNEXECUTED (REVIEW REQUIRED) ***</div>' : ''}
+          <div class="content">${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6">
       <div className="border-b border-subtle pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -185,6 +254,17 @@ export const DraftGenerator = () => {
                     <Eye className="w-3 h-3" />
                     <span>View & Sign</span>
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadDraft(d.content, d.title || d.docType, d.case?.caseNumber || d.caseId);
+                    }}
+                    className="px-2.5 py-1 theme-elevated border border-subtle hover:bg-subtle text-[11px] font-bold rounded flex items-center gap-1 cursor-pointer"
+                    title="Download copy of this draft order / summons"
+                  >
+                    <Download className="w-3 h-3 text-blue-500" />
+                    <span>Download</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -255,7 +335,7 @@ export const DraftGenerator = () => {
 
       {draftContent && (
         <div className="theme-card rounded-xl border border-subtle p-6 space-y-4 shadow-xl">
-          <div className="flex justify-between items-center border-b border-subtle pb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-subtle pb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-base font-serif font-bold theme-heading">Selected Document Render</h2>
               <span className={`px-2.5 py-0.5 rounded text-xs font-bold ${
@@ -267,24 +347,48 @@ export const DraftGenerator = () => {
               </span>
             </div>
 
-            {draftStatus === 'DRAFT' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleSignOff('APPROVED')}
-                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Approve & Sign Off
-                </button>
-                <button
-                  onClick={() => handleSignOff('REJECTED')}
-                  className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Reject Draft
-                </button>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Option to Download Draft Copy */}
+              <button
+                type="button"
+                onClick={() => handleDownloadDraft(draftContent, `${docType} - ${caseNo}`, caseNo)}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow transition-colors cursor-pointer"
+                title="Download draft copy as a text document"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Draft Copy</span>
+              </button>
+
+              {/* Print / Save as PDF Option */}
+              <button
+                type="button"
+                onClick={() => handlePrintDraft(draftContent, `${docType} - ${caseNo}`)}
+                className="px-3 py-1.5 theme-elevated border border-subtle hover:bg-subtle text-xs font-bold theme-heading rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Open formatted printable view to print or save as PDF"
+              >
+                <Printer className="w-3.5 h-3.5 text-amber-500" />
+                <span>Print / PDF</span>
+              </button>
+
+              {draftStatus === 'DRAFT' && (
+                <>
+                  <button
+                    onClick={() => handleSignOff('APPROVED')}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow transition-colors cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Approve & Sign Off</span>
+                  </button>
+                  <button
+                    onClick={() => handleSignOff('REJECTED')}
+                    className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1 shadow transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Reject Draft</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <AiReviewBadge statusText="Must be reviewed and signed off by presiding officer before export" />
