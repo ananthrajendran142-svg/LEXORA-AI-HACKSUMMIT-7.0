@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building, Plus, CheckCircle, X, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { Building, Plus, CheckCircle, X, Loader2, AlertTriangle, Trash2, Clock, History } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface JudgeUser {
@@ -23,6 +23,80 @@ interface AllocationRecord {
   createdAt: string;
 }
 
+/**
+ * Safely parse date (YYYY-MM-DD) and optional time string (e.g. "10:30 AM", "04:30 PM", "16:30")
+ * into a local Date object for accurate chronological comparison.
+ */
+export function parseAllocationDateTime(dateStr: string, timeStr?: string): Date {
+  if (!dateStr) return new Date();
+  const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.trim();
+  const parts = cleanDate.split('-').map(Number);
+  const y = parts[0] || new Date().getFullYear();
+  const m = (parts[1] || 1) - 1;
+  const d = parts[2] || 1;
+
+  let hours = 23;
+  let minutes = 59;
+  let seconds = 59;
+
+  if (timeStr && timeStr.trim()) {
+    const cleanTime = timeStr.trim().toUpperCase();
+    const isPM = cleanTime.includes('PM');
+    const isAM = cleanTime.includes('AM');
+    const timeParts = cleanTime.replace(/(AM|PM|\s)/g, '').split(':');
+    if (timeParts.length >= 2) {
+      let h = parseInt(timeParts[0], 10) || 0;
+      const min = parseInt(timeParts[1], 10) || 0;
+      const sec = timeParts[2] ? parseInt(timeParts[2], 10) || 0 : 0;
+      if (isPM && h < 12) h += 12;
+      if (isAM && h === 12) h = 0;
+      hours = h;
+      minutes = min;
+      seconds = sec;
+    }
+  }
+
+  return new Date(y, m, d, hours, minutes, seconds);
+}
+
+/**
+ * Checks if an allocation's date and scheduled time slot has already passed
+ * relative to the reference time.
+ */
+export function isAllocationPast(
+  a: { date: string; endTime?: string; startTime?: string },
+  refTime: Date = new Date()
+): boolean {
+  if (!a.date) return false;
+  // If endTime is specified, check whether the session end timestamp has passed
+  if (a.endTime && a.endTime.trim()) {
+    const endDateTime = parseAllocationDateTime(a.date, a.endTime);
+    return refTime.getTime() > endDateTime.getTime();
+  }
+  // If only startTime is specified, check whether start time has passed
+  if (a.startTime && a.startTime.trim()) {
+    const startDateTime = parseAllocationDateTime(a.date, a.startTime);
+    return refTime.getTime() > startDateTime.getTime();
+  }
+  // Otherwise, expires at the end of that day (23:59:59)
+  const dayEnd = parseAllocationDateTime(a.date, '11:59:59 PM');
+  return refTime.getTime() > dayEnd.getTime();
+}
+
+/**
+ * Checks if an allocation is currently active/in session right now
+ */
+export function isAllocationInSession(
+  a: { date: string; startTime?: string; endTime?: string },
+  refTime: Date = new Date()
+): boolean {
+  if (!a.date || !a.startTime) return false;
+  const start = parseAllocationDateTime(a.date, a.startTime);
+  const end = a.endTime ? parseAllocationDateTime(a.date, a.endTime) : parseAllocationDateTime(a.date, '11:59:59 PM');
+  const ref = refTime.getTime();
+  return ref >= start.getTime() && ref <= end.getTime();
+}
+
 export const BenchAllocationPage: React.FC = () => {
   const [allocations, setAllocations] = useState<AllocationRecord[]>([]);
   const [judges, setJudges] = useState<JudgeUser[]>([]);
@@ -33,8 +107,36 @@ export const BenchAllocationPage: React.FC = () => {
   const [actionMsg, setActionMsg] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [viewTab, setViewTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+
+  // Automatic ticker to re-evaluate past/upcoming transitions every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const todayStr = new Date().toISOString().split('T')[0];
+
+  // Helper to suggest next default session
+  const getNextDefaultSlot = () => {
+    const now = new Date();
+    if (now.getHours() >= 16) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return {
+        date: tomorrow.toISOString().split('T')[0],
+        startTime: '10:00 AM',
+        endTime: '04:30 PM',
+      };
+    }
+    return {
+      date: now.toISOString().split('T')[0],
+      startTime: '10:30 AM',
+      endTime: '04:30 PM',
+    };
+  };
 
   // Form inputs
   const [selectedJudgeId, setSelectedJudgeId] = useState<string>('');
@@ -72,6 +174,15 @@ export const BenchAllocationPage: React.FC = () => {
     }
   };
 
+  const handleOpenAddModal = () => {
+    setErrorMsg('');
+    const slot = getNextDefaultSlot();
+    setDate(slot.date);
+    setStartTime(slot.startTime);
+    setEndTime(slot.endTime);
+    setShowAddModal(true);
+  };
+
   const handleCreateAllocation = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
@@ -85,6 +196,14 @@ export const BenchAllocationPage: React.FC = () => {
     if (date < todayStr) {
       setErrorMsg("Cannot create a bench allocation for a past date. Please select today's date or a future date.");
       return;
+    }
+
+    if (date === todayStr && endTime) {
+      const endDateTime = parseAllocationDateTime(date, endTime);
+      if (endDateTime.getTime() <= Date.now()) {
+        setErrorMsg("The specified end time slot has already passed for today. Please schedule an upcoming time slot or select a future date.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -120,9 +239,9 @@ export const BenchAllocationPage: React.FC = () => {
     }
   };
 
-  // Filter allocations into Active/Upcoming vs Past Archive
-  const upcomingAllocations = allocations.filter((a) => a.date >= todayStr);
-  const pastAllocations = allocations.filter((a) => a.date < todayStr);
+  // Filter allocations into Active/Upcoming vs Past Archive by evaluating both date and time slot
+  const upcomingAllocations = allocations.filter((a) => !isAllocationPast(a, currentTime));
+  const pastAllocations = allocations.filter((a) => isAllocationPast(a, currentTime));
   const displayedAllocations = viewTab === 'upcoming' ? upcomingAllocations : pastAllocations;
 
   return (
@@ -140,7 +259,7 @@ export const BenchAllocationPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => { setErrorMsg(''); setDate(todayStr); setShowAddModal(true); }}
+          onClick={handleOpenAddModal}
           className="theme-primary-btn px-4 py-2.5 text-xs flex items-center gap-1.5 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -197,26 +316,34 @@ export const BenchAllocationPage: React.FC = () => {
             </h2>
 
             {/* Filter Tabs: Upcoming vs Past */}
-            <div className="flex bg-slate-200 dark:bg-slate-800 p-0.5 rounded text-xs">
+            <div className="flex bg-slate-200 dark:bg-slate-800 p-0.5 rounded text-xs gap-1">
               <button
                 onClick={() => setViewTab('upcoming')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewTab === 'upcoming'
                     ? 'bg-amber-500 text-white font-bold shadow-xs'
                     : 'theme-subtext hover:theme-heading'
                 }`}
               >
-                Active & Upcoming ({upcomingAllocations.length})
+                <Clock className="w-3.5 h-3.5" />
+                <span>Active & Upcoming</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${viewTab === 'upcoming' ? 'bg-amber-600 text-white' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  {upcomingAllocations.length}
+                </span>
               </button>
               <button
                 onClick={() => setViewTab('past')}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   viewTab === 'past'
                     ? 'bg-slate-700 text-white font-bold shadow-xs'
                     : 'theme-subtext hover:theme-heading'
                 }`}
               >
-                Past Archive ({pastAllocations.length})
+                <History className="w-3.5 h-3.5" />
+                <span>Past Archive</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${viewTab === 'past' ? 'bg-slate-800 text-white' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                  {pastAllocations.length}
+                </span>
               </button>
             </div>
           </div>
@@ -230,10 +357,24 @@ export const BenchAllocationPage: React.FC = () => {
             <span>Loading bench allocations from database...</span>
           </div>
         ) : displayedAllocations.length === 0 ? (
-          <div className="p-8 text-center theme-subtext text-xs">
-            {viewTab === 'upcoming'
-              ? 'No active or upcoming bench allocations found. Click "Create New Bench Allocation" to schedule one.'
-              : 'No past bench allocations found in archive.'}
+          <div className="p-8 text-center theme-subtext text-xs space-y-1">
+            <p>
+              {viewTab === 'upcoming'
+                ? 'No active or upcoming bench allocations found. Click "Create New Bench Allocation" to schedule one.'
+                : 'No past bench allocations found in archive.'}
+            </p>
+            {viewTab === 'upcoming' && pastAllocations.length > 0 && (
+              <p>
+                <button
+                  type="button"
+                  onClick={() => setViewTab('past')}
+                  className="text-amber-500 hover:underline font-semibold cursor-pointer inline-flex items-center gap-1 mt-1"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  View {pastAllocations.length} concluded allocation{pastAllocations.length > 1 ? 's' : ''} in the Past Archive tab
+                </button>
+              </p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -249,37 +390,49 @@ export const BenchAllocationPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {displayedAllocations.map((a) => (
-                  <tr key={a.id} className={a.date < todayStr ? 'opacity-60 bg-slate-500/5' : ''}>
-                    <td className="px-4 py-3 font-bold text-blue-500 whitespace-nowrap">{a.courtroom}</td>
-                    <td className="px-4 py-3 font-semibold theme-heading whitespace-nowrap">
-                      {a.judge?.name || 'Assigned Officer'}
-                      <div className="text-[10px] theme-subtext">{a.judge?.designation || 'Judicial Officer'}</div>
-                    </td>
-                    <td className="px-4 py-3 theme-subtext">{a.division}</td>
-                    <td className="px-4 py-3 font-mono theme-subtext whitespace-nowrap">
-                      {a.date} ({a.startTime} - {a.endTime})
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${
-                        a.date < todayStr
-                          ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
-                          : 'badge-supported'
-                      }`}>
-                        {a.date < todayStr ? 'Concluded (Past)' : a.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => handleDeleteAllocation(a.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ml-auto"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {displayedAllocations.map((a) => {
+                  const isPast = isAllocationPast(a, currentTime);
+                  const inSession = isAllocationInSession(a, currentTime);
+
+                  return (
+                    <tr
+                      key={a.id}
+                      className={isPast ? 'opacity-70 bg-slate-500/5 hover:bg-slate-500/10 transition-colors' : 'hover:bg-slate-500/5 transition-colors'}
+                    >
+                      <td className="px-4 py-3 font-bold text-blue-500 whitespace-nowrap">{a.courtroom}</td>
+                      <td className="px-4 py-3 font-semibold theme-heading whitespace-nowrap">
+                        {a.judge?.name || 'Assigned Officer'}
+                        <div className="text-[10px] theme-subtext">{a.judge?.designation || 'Judicial Officer'}</div>
+                      </td>
+                      <td className="px-4 py-3 theme-subtext">{a.division}</td>
+                      <td className="px-4 py-3 font-mono theme-subtext whitespace-nowrap">
+                        {a.date} ({a.startTime} - {a.endTime})
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                            isPast
+                              ? 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                              : inSession
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse'
+                              : 'badge-supported'
+                          }`}
+                        >
+                          {isPast ? 'Concluded (Past Archive)' : inSession ? 'In Session (Live)' : a.status || 'Active'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => handleDeleteAllocation(a.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ml-auto"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -392,6 +545,13 @@ export const BenchAllocationPage: React.FC = () => {
                     className="w-full px-3 py-2 text-xs rounded"
                   />
                 </div>
+              </div>
+
+              <div className="p-2.5 rounded bg-amber-500/10 border border-amber-500/20 text-[11px] theme-subtext flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  Allocations automatically transition to the <strong>Past Archive</strong> once their scheduled date and time slot concludes.
+                </span>
               </div>
 
               <button
